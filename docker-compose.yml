@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: weft:dev
+    container_name: weft-app
+    volumes:
+      # Mount source code for live reload (rw for pip install -e)
+      - ./src:/app/src:rw
+      - ./tests:/app/tests:rw
+      - ./prompt-specs:/app/prompt-specs:ro
+
+      # Mount AI history (read-write)
+      - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+
+      # Mount code repository (read-only for safety)
+      - ${CODE_REPO_PATH:-./data/code-repo}:/data/code-repo:ro
+
+    environment:
+      # Configuration
+      - CODE_REPO_PATH=/data/code-repo
+      - AI_HISTORY_PATH=/data/ai-history
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-sonnet-20241022}
+      - AI_BACKEND=${AI_BACKEND:-claude}
+      - POLL_INTERVAL=${POLL_INTERVAL:-2}
+
+      # Python configuration
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+
+    # Keep container running for development
+    command: tail -f /dev/null
+
+    networks:
+      - weft-network
+
+  # Agent Watchers (uncomment to run background processing)
+  # These services monitor file queues and invoke AI backends
+
+  # watcher-meta:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-meta
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 00-meta
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+  # watcher-architect:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-architect
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 01-architect
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+  # watcher-openapi:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-openapi
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 02-openapi
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+  # watcher-ui-skeleton:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-ui-skeleton
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 03-ui-skeleton
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+  # watcher-integration:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-integration
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 04-integration
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+  # watcher-test:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: weft:dev
+  #   container_name: weft-watcher-test
+  #   volumes:
+  #     - ./src:/app/src:ro
+  #     - ./prompt-specs:/app/prompt-specs:ro
+  #     - ${AI_HISTORY_PATH:-./data/ai-history}:/data/ai-history:rw
+  #   environment:
+  #     - AI_HISTORY_PATH=/data/ai-history
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #     - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-3-5-sonnet-20241022}
+  #     - POLL_INTERVAL=${POLL_INTERVAL:-2}
+  #     - PYTHONUNBUFFERED=1
+  #   command: python -m weft.scripts.run_watcher 05-test
+  #   restart: unless-stopped
+  #   networks:
+  #     - weft-network
+
+networks:
+  weft-network:
+    driver: bridge

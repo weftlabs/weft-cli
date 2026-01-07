@@ -1,0 +1,9 @@
+# Production dependencies
+# Generated from pyproject.toml - do not edit manually
+# To update: pip-compile pyproject.toml -o requirements.txt
+
+anthropic>=0.27.0,<1.0.0
+python-dotenv>=1.0.0
+click>=8.1.0
+pyyaml>=6.0
+pydantic>=2.0.0

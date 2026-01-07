@@ -1,0 +1,2 @@
+[console_scripts]
+weft = weft.cli.main:cli

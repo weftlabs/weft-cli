@@ -1,0 +1,36 @@
+# Development overrides
+# Usage: docker-compose -f docker-compose.yml -f docker/docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  app:
+    # Override build for development
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for dev tools
+
+    # Add development tools
+    volumes:
+      # Mount entire src directory with write access for development
+      - ../src:/app/src:rw
+      - ../tests:/app/tests:rw
+
+      # Mount development configs
+      - ../.env:/app/.env:ro
+
+    # Add debugging ports
+    ports:
+      - "5678:5678"  # Python debugger
+
+    # Install development dependencies
+    command: >
+      sh -c "
+        pip install --no-cache-dir pytest-watch ipdb debugpy &&
+        tail -f /dev/null
+      "
+
+    # Enable interactive terminal
+    stdin_open: true
+    tty: true

@@ -1,0 +1,17 @@
+# UI Agent Configuration
+
+agent_id: "03-ui"
+agent_name: "ui"
+spec_filename: "03-ui.md"
+
+# Execution ordering
+stage: "implementation"
+order_in_stage: 1
+
+# Agent description
+description: "User interface scaffolding and components"
+
+# Output validation
+# Note: Relaxed validation to allow flexible output formats
+validation:
+  required_sections: []

@@ -1,0 +1,21 @@
+# Architect Agent Configuration
+
+agent_id: "01-architect"
+agent_name: "architect"
+spec_filename: "01_architect.md"
+
+# Execution ordering
+stage: "architecture"
+order_in_stage: 0
+
+# Agent description
+description: "Domain modeling and technical architecture"
+
+# Output validation
+validation:
+  required_sections:
+    - "## Domain Model"
+    - "## Use Cases"
+    - "## API Requirements"
+    - "## Data Flow"
+    - "## Trade-offs"

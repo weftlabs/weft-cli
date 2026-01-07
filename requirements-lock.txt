@@ -1,0 +1,35 @@
+# Locked dependencies for reproducible builds
+# Generated on 2025-12-31 from pyproject.toml
+# These are the tested and verified versions
+#
+# To install:
+#   pip install -r requirements-lock.txt
+#
+# To update:
+#   1. Install pip-tools: pip install pip-tools
+#   2. Run: pip-compile pyproject.toml -o requirements-lock.txt
+#   3. Test thoroughly before committing
+
+# Core dependencies
+anthropic==0.75.0
+click==8.3.1
+pydantic==2.12.5
+pydantic-core==2.41.5
+python-dotenv==1.2.1
+PyYAML==6.0.3
+
+# Transitive dependencies (required by above)
+# anthropic dependencies
+anyio==4.12.1
+certifi==2024.12.14
+distro==1.10.0
+h11==0.15.0
+httpcore==1.0.7
+httpx==0.28.1
+idna==3.10
+jiter==0.9.0
+sniffio==1.3.1
+typing-extensions==4.12.2
+
+# Development dependencies (optional)
+# Install with: pip install -r requirements-lock.txt -r requirements-dev-lock.txt

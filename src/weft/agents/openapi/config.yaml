@@ -1,0 +1,20 @@
+# OpenAPI Agent Configuration
+
+agent_id: "02-openapi"
+agent_name: "openapi"
+spec_filename: "02-openapi.md"
+
+# Execution ordering
+stage: "implementation"
+order_in_stage: 0
+
+# Agent description
+description: "OpenAPI specification generation"
+
+# Output validation
+validation:
+  required_sections:
+    - "openapi:"
+    - "info:"
+    - "paths:"
+    - "components:"

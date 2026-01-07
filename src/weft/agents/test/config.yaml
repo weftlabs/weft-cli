@@ -1,0 +1,17 @@
+# Test Agent Configuration
+
+agent_id: "05-test"
+agent_name: "test"
+spec_filename: "05-test.md"
+
+# Execution ordering
+stage: "validation"
+order_in_stage: 0
+
+# Agent description
+description: "Test generation and code review"
+
+# Output validation
+# Note: Relaxed validation to allow flexible output formats
+validation:
+  required_sections: []

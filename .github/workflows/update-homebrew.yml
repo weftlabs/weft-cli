@@ -1,0 +1,71 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+
+      - name: Download and hash release tarball
+        id: tarball
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          URL="https://github.com/weftlabs/weft-cli/archive/refs/tags/v${VERSION}.tar.gz"
+
+          # Download tarball and calculate SHA256
+          curl -L "${URL}" -o weft.tar.gz
+          SHA256=$(shasum -a 256 weft.tar.gz | awk '{print $1}')
+
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "SHA256: ${SHA256}"
+
+      - name: Checkout homebrew-tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: weftlabs/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256="${{ steps.tarball.outputs.sha256 }}"
+          URL="${{ steps.tarball.outputs.url }}"
+
+          cd homebrew-tap
+
+          # Update version and checksums in formula
+          sed -i.bak "s|url \".*\"|url \"${URL}\"|" Formula/weft.rb
+          sed -i.bak "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/weft.rb
+
+          # Show changes
+          git diff Formula/weft.rb
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/weft.rb
+          git commit -m "Update Weft to v${VERSION}"
+          git push
+
+      - name: Comment on release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            github.rest.repos.createReleaseComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: `✅ Homebrew formula updated to v${version}\n\nInstall with:\n\`\`\`bash\nbrew upgrade weft\n\`\`\``
+            });

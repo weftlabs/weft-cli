@@ -1,0 +1,17 @@
+# Integration Agent Configuration
+
+agent_id: "04-integration"
+agent_name: "integration"
+spec_filename: "04-integration.md"
+
+# Execution ordering
+stage: "implementation"
+order_in_stage: 2
+
+# Agent description
+description: "API integration and state management"
+
+# Output validation
+# Note: Relaxed validation to allow flexible output formats
+validation:
+  required_sections: []

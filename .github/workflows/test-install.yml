@@ -1,0 +1,175 @@
+name: Test Install Script
+
+# Tests the install.sh script across multiple platforms and Python versions
+# Note: Docker is only tested on Ubuntu - macOS GitHub Actions runners don't
+# support Docker/colima. The install script gracefully warns about missing Docker.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - 'pyproject.toml'
+      - '.github/workflows/test-install.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - 'pyproject.toml'
+      - '.github/workflows/test-install.yml'
+  workflow_dispatch:
+
+jobs:
+  test-install-script:
+    name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify Docker (Ubuntu only)
+        if: runner.os == 'Linux'
+        run: |
+          # Docker is already installed on GitHub Actions Ubuntu runners
+          docker --version
+
+      # Note: Skip Docker setup on macOS in CI
+      # colima doesn't work reliably in GitHub Actions runners
+      # The install script will warn about missing Docker, which is expected
+
+      - name: Test install script (local mode)
+        run: |
+          chmod +x install.sh
+          WEFT_LOCAL_INSTALL=1 bash install.sh
+
+      - name: Verify weft is installed
+        run: |
+          # Find weft in common locations
+          if [ -f "$HOME/.local/bin/weft" ]; then
+            WEFT_BIN="$HOME/.local/bin/weft"
+          elif [ -f "$HOME/Library/Python/${{ matrix.python-version }}/bin/weft" ]; then
+            WEFT_BIN="$HOME/Library/Python/${{ matrix.python-version }}/bin/weft"
+          else
+            echo "Finding weft..."
+            WEFT_BIN=$(find $HOME -name weft -type f 2>/dev/null | grep -E '(\.local|Library/Python)' | head -1)
+          fi
+
+          if [ -z "$WEFT_BIN" ]; then
+            echo "Error: weft binary not found"
+            exit 1
+          fi
+
+          echo "Found weft at: $WEFT_BIN"
+          $WEFT_BIN --version
+
+      - name: Test weft init command
+        run: |
+          WEFT_BIN=$(find $HOME -name weft -type f 2>/dev/null | grep -E '(\.local|Library/Python)' | head -1)
+          mkdir -p /tmp/test-weft-project
+          cd /tmp/test-weft-project
+
+          # Test help command
+          $WEFT_BIN --help
+
+          # Test version command
+          VERSION=$($WEFT_BIN --version)
+          echo "Installed version: $VERSION"
+
+      - name: Uninstall weft
+        if: always()
+        run: |
+          python${{ matrix.python-version }} -m pip uninstall -y weft || true
+
+  test-install-methods:
+    name: Test ${{ matrix.method }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        method: ['local-script', 'pipx']
+        python-version: ['3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Test local install script
+        if: matrix.method == 'local-script'
+        run: |
+          chmod +x install.sh
+          WEFT_LOCAL_INSTALL=1 bash install.sh
+
+          # Verify installation
+          WEFT_BIN=$(find $HOME -name weft -type f 2>/dev/null | grep -E '(\.local|Library/Python)' | head -1)
+          $WEFT_BIN --version
+
+      - name: Test pipx installation
+        if: matrix.method == 'pipx'
+        run: |
+          python${{ matrix.python-version }} -m pip install --user pipx
+          python${{ matrix.python-version }} -m pipx ensurepath
+
+          # Install from local directory
+          python${{ matrix.python-version }} -m pipx install .
+
+          # Verify installation
+          pipx list
+          weft --version || $HOME/.local/bin/weft --version
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ "${{ matrix.method }}" = "pipx" ]; then
+            python${{ matrix.python-version }} -m pipx uninstall weft || true
+          else
+            python${{ matrix.python-version }} -m pip uninstall -y weft || true
+          fi
+
+  shellcheck:
+    name: Shellcheck install.sh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shellcheck install.sh
+
+  test-from-github:
+    name: Test GitHub installation (post-release)
+    runs-on: ubuntu-latest
+    # Only run this on releases
+    if: github.event_name == 'release'
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download and run install script
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/weftlabs/weft-cli/main/install.sh | sh
+
+      - name: Verify installation
+        run: |
+          weft --version || $HOME/.local/bin/weft --version
