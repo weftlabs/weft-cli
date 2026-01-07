@@ -1,0 +1,1 @@
+"""Weft scripts package."""

@@ -1,0 +1,16 @@
+# Meta Agent Configuration
+
+agent_id: "00-meta"
+agent_name: "meta"
+spec_filename: "00_meta.md"
+
+# Execution ordering
+stage: "specification"
+order_in_stage: 0
+
+# Agent description
+description: "Feature understanding and prompt generation"
+
+# Output validation (optional)
+validation:
+  required_sections: []

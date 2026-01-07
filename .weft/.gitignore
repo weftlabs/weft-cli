@@ -1,0 +1,8 @@
+# Weft runtime directory
+# This directory should not be committed to git
+#
+# Note: prompts/ is tracked by default for team consistency
+# Add 'prompts/' below if you prefer to always use weft defaults
+*
+!.gitignore
+!prompts/

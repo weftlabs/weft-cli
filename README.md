@@ -1,55 +1,104 @@
 # Weft CLI
 
-The **Weft CLI** is a command-line tool designed to support Weft’s development workflows.
+**Structured AI workflows for real-world software development**
 
-It will provide a structured, repeatable interface for interacting with projects, repositories, and automation around the Weft ecosystem.
+Weft is a developer-first CLI that uses specialized AI agents to help you design, implement, and review software features — while keeping humans firmly in control.
 
-> ⚠️ This repository is in an early, pre-release state.  
-> The CLI is not yet implemented.
-
----
-
-## Goals
-
-- Provide a clear, ergonomic CLI for common Weft workflows
-- Enforce consistency across projects
-- Reduce manual steps in development and release processes
-- Serve as a foundation for future automation
+Instead of ad-hoc prompts or “vibe coding”, Weft provides a **repeatable, auditable workflow** that fits naturally into existing development processes.
 
 ---
 
-## Status
+## What Weft is (and isn’t)
 
-🚧 **Early preview**
+**Weft is:**
+- A CLI for structured, AI-assisted feature development
+- Built around explicit steps and human review
+- Designed for real projects and real teams
+- Auditable by default
 
-- No implementation yet
-- Commands, flags, and behavior are still being defined
-- APIs and UX may change significantly
-
----
-
-## Planned scope (draft)
-
-The CLI is expected to cover areas such as:
-
-- Project initialization and configuration
-- Workflow orchestration
-- Repository and environment helpers
-- Local developer tooling
-
-Details will be documented as the implementation evolves.
+**Weft is not:**
+- An auto-merge coding bot
+- A chat interface for prompts
+- A replacement for code review or CI
 
 ---
 
-## Versioning
+## How it works (high level)
 
-The Weft CLI follows [Semantic Versioning](https://semver.org/).
+Feature request  
+→ Agents  
+→ Human review  
+→ Merge
 
-- `0.x` releases are experimental
-- Breaking changes may occur without notice
+Each agent has a single responsibility (design, architecture, implementation, validation).  
+All outputs are written to disk and reviewed before anything is merged.
+
+---
+
+## Quick start
+
+Install Weft:
+
+```bash
+brew install weft
+```
+
+Initialize it in your project:
+
+```bash
+weft init
+weft up
+```
+
+Create and run a feature:
+
+```bash
+weft feature create user-auth
+weft feature start user-auth
+weft feature review user-auth
+```
+
+For full installation instructions and alternatives, see the docs.
+
+---
+
+## Documentation
+
+Start here:
+
+- **Installation** → docs/installation.md  
+- **Agents** → docs/agents.md  
+- **Configuration** → docs/configuration.md  
+- **CLI reference** → docs/cli-reference.md  
+- **Architecture** → docs/architecture.md  
+- **Troubleshooting** → docs/troubleshooting.md  
+
+---
+
+## Project status
+
+Weft is in **early development (v0.x)**.
+
+The core workflow is functional, but APIs and behavior may change before 1.0.  
+Feedback and experimentation are welcome.
+
+---
+
+## Contributing
+
+Contributions are welcome.  
+See docs/development.md for setup and guidelines.
 
 ---
 
 ## License
 
-MIT
+MIT License. See LICENSE for details.
+
+---
+
+## Support
+
+- GitHub Issues: https://github.com/weftlabs/weft-cli/issues
+
+---

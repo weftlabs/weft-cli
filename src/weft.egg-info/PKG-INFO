@@ -1,0 +1,303 @@
+Metadata-Version: 2.4
+Name: weft
+Version: 0.1.0
+Summary: Enterprise-grade, security-aware AI-assisted software development workflow
+Author: Weft Team
+License: MIT
+Project-URL: Homepage, https://github.com/weftlabs/weft-cli
+Project-URL: Documentation, https://github.com/weftlabs/weft-cli/tree/main/docs
+Project-URL: Repository, https://github.com/weftlabs/weft-cli
+Project-URL: Issues, https://github.com/weftlabs/weft-cli/issues
+Keywords: ai,workflow,automation,agents,claude
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Software Development :: Libraries
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: anthropic<1.0.0,>=0.27.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: click>=8.1.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: tabulate>=0.9.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.12.0; extra == "dev"
+Requires-Dist: pytest-timeout>=2.1.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: mypy>=1.7.0; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: mkdocs>=1.5.0; extra == "docs"
+Requires-Dist: mkdocs-material>=9.5.0; extra == "docs"
+Requires-Dist: mkdocs-minify-plugin>=0.8.0; extra == "docs"
+Requires-Dist: pymdown-extensions>=10.7.0; extra == "docs"
+Dynamic: license-file
+
+# Weft
+
+**AI-Assisted Development Workflow with Code-Generating Agents**
+
+Weft is a CLI tool that orchestrates AI agents to design and implement software features. Each agent has a specific role - from initial design to architecture to **generating executable code**. Agents automatically apply code to isolated feature branches, with human review before merging to main.
+
+## Status
+
+**Current Version:** 0.1.0 (Early Development)
+
+Weft is in active development. Core functionality is working but the system is not yet production-ready.
+
+**What Works Now:**
+- **Automated 6-Agent Pipeline:** Full feature development from design to code to tests
+- **Language-Agnostic Code Generation:** Agents 02-05 generate code for your configured stack (TypeScript, Python, Go, Rust, etc.)
+- **Automatic Code Application:** Code patches applied to feature branch worktrees
+- **Test Generation:** Test agent creates comprehensive test suites
+- **Multi-Language Support:** Configure your stack in `.weftrc.yaml` (TypeScript/React, Python/Django, Go/Gin, Rust/Actix, etc.)
+- Project initialization with `.weftrc.yaml` configuration
+- Docker-based runtime with agent watchers
+- Feature lifecycle management with Git worktrees
+- Claude API integration with structured prompts
+- Human review gate at `weft feature review`
+
+**What's Coming:**
+- Enhanced observability and tracing
+- Offline/local LLM support
+- Production deployment guides
+- Agent customization UI
+
+**Known Limitations (v0.1):**
+- Conversation context uses 60-second timestamp window (UUID-based matching in v0.2)
+- Single-threaded agent processing only
+- LocalLLM backend not yet implemented (Ollama support in M4)
+- No observability/tracing (planned for M3)
+- Manual conflict resolution required
+
+See [Troubleshooting](docs/TROUBLESHOOTING.md#known-limitations-v01) for details and workarounds.
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11 or higher
+- Docker and Docker Compose
+- Claude API key from [console.anthropic.com](https://console.anthropic.com/)
+
+### Installation
+
+Choose the method that works best for you:
+
+#### Option 1: Homebrew (Recommended for macOS/Linux)
+
+```bash
+brew tap weftlabs/tap
+brew install weft
+```
+
+#### Option 2: pipx (Recommended for Python Developers)
+
+```bash
+pipx install git+https://github.com/weftlabs/weft-cli.git
+```
+
+#### Option 3: Quick Install Script
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/weftlabs/weft-cli/main/install.sh | sh
+```
+
+#### Option 4: From Source (For Development)
+
+```bash
+git clone https://github.com/weftlabs/weft-cli.git
+cd weft-cli
+pip install -e .
+```
+
+**See [INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions, troubleshooting, and prerequisites.**
+
+### Initialize Your Project
+
+```bash
+# Navigate to your project directory
+cd ~/projects/my-app
+
+# Initialize Weft (creates .weftrc.yaml and .weft/ directory)
+weft init
+
+# Follow the interactive prompts:
+# - Project name: my-app
+# - Project type: fullstack|backend|frontend
+# - AI provider: claude|ollama|other
+# - AI history path: ../weft-ai-history (default)
+```
+
+### Configure API Key
+
+```bash
+# Set your Claude API key
+export ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+
+# Or create a .env file
+echo "ANTHROPIC_API_KEY=sk-ant-api03-your-key-here" > .env
+```
+
+### Start the Runtime
+
+```bash
+# Start Docker containers for agent watchers
+weft up
+
+# View logs from a specific agent
+weft logs meta --follow
+
+# Stop the runtime
+weft down
+```
+
+### Your First Feature
+
+```bash
+# Create a new feature
+weft feature create user-auth
+
+# Start the feature (launches agents)
+weft feature start user-auth
+
+# Check status
+weft feature status user-auth
+
+# Review outputs and decide (accept/drop/continue)
+weft feature review user-auth
+```
+
+## Documentation
+
+### Getting Started
+- **[Installation](docs/INSTALLATION.md)** - Complete installation guide for all methods
+- **[Overview](docs/OVERVIEW.md)** - System concept and how it works
+- **[Getting Started](docs/GETTING-STARTED.md)** - Detailed tutorial
+- **[CLI Reference](docs/CLI-REFERENCE.md)** - Complete command documentation
+
+### Configuration & Usage
+- **[Configuration](docs/CONFIGURATION.md)** - `.weftrc.yaml` reference
+- **[Agents](docs/AGENTS.md)** - Understanding the agent system
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Development
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and implementation
+- **[Development](docs/DEVELOPMENT.md)** - Contributing and development guide
+
+### Project Information
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[Security](SECURITY.md)** - Security policy and vulnerability reporting
+- **[Contributing](CONTRIBUTING.md)** - How to contribute to Weft
+
+## Project Structure
+
+```
+weft/
+├── src/weft/                    # Python package source
+│   ├── agents/                  # Agent implementations
+│   ├── cli/                     # CLI commands
+│   ├── config/                  # Configuration management
+│   ├── git/                     # Git operations
+│   ├── history/                 # AI history tracking
+│   ├── queue/                   # Task queue system
+│   └── templates/               # Docker and config templates
+├── prompt-specs/                # Agent prompt specifications
+│   └── v1.0.0/                 # Versioned prompts
+├── docs/                        # Documentation
+├── tests/                       # Test suite
+├── templates/                   # CLI templates
+└── pyproject.toml              # Package configuration
+```
+
+## How It Works
+
+Weft uses **specialized AI agents** that work sequentially on feature development:
+
+1. **00-Meta Agent** - Analyzes your feature request and creates a design brief
+2. **01-Architect Agent** - Develops detailed technical architecture
+3. **02-OpenAPI Agent** - Generates complete OpenAPI/Swagger specifications
+4. **03-UI Agent** - Creates UI component implementations for your configured framework
+5. **04-Integration Agent** - Generates API clients, data fetching layer, and state management
+6. **05-Test Agent** - Writes comprehensive test suites for your configured testing framework
+
+**Automated Pipeline:**
+- Runs `weft feature start` → All 6 agents execute sequentially
+- Agents 00-01 produce design documents
+- Agents 02-05 generate executable code files
+- Code is automatically applied to feature branch worktree
+- All changes are staged in git, ready for review
+
+Each agent:
+- Runs in an isolated Docker container
+- Uses versioned prompt specifications
+- Receives context from previous agents' outputs
+- Produces auditable artifacts in AI history repository
+
+Human review gate at `weft feature review` before merging to main.
+
+## Key Features
+
+### Current Features
+
+- **Docker-First Architecture** - All agents run in containers for consistency
+- **Configuration Management** - YAML-based project configuration
+- **CLI Interface** - Simple commands for all operations
+- **Audit Trail** - All AI interactions are tracked and versioned
+- **Security by Design** - No secrets in configuration files
+- **Flexible AI Providers** - Support for Claude, local LLMs
+
+### Planned Features
+
+- **Git Worktree Integration** - Isolated workspaces per feature
+- **Automated Workflows** - End-to-end feature development pipeline
+- **Observability** - OpenTelemetry tracing and metrics
+- **Offline Mode** - Work without internet using local LLMs
+- **Self-Development** - System contributes to its own development
+
+## Philosophy
+
+Weft is designed with these principles:
+
+1. **Human-in-the-Loop** - AI suggests, humans decide
+2. **Security First** - No secrets or sensitive data in AI prompts
+3. **Full Auditability** - Every AI interaction is tracked
+4. **Reproducibility** - Same inputs yield same outputs
+5. **Practical Over Perfect** - Solve real problems incrementally
+
+This is not a "vibe coding" tool. It's a structured workflow system that augments developer capabilities while maintaining full control and traceability.
+
+## Development Status
+
+**Current Version:** 0.1.0 - Early Development
+**Focus:** Core CLI functionality and agent pipeline
+
+## Contributing
+
+We welcome contributions! See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for:
+
+- Development setup
+- Code style guidelines
+- Testing requirements
+- How to submit changes
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Support
+
+- **Issues:** [GitHub Issues](https://github.com/weftlabs/weft-cli/issues)
+- **Documentation:** [docs/](docs/)
+- **Discussions:** [GitHub Discussions](https://github.com/weftlabs/weft-cli/discussions)
+
+---
+
+**Note:** Weft is under active development. APIs and workflows may change as we approach 1.0. Check the changelog and documentation for updates.
