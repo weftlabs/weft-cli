@@ -129,7 +129,7 @@ Log out and back in for changes to apply.
 
 ### Containers fail to start
 
-**Problem**  
+**Problem**
 Agent containers exit immediately.
 
 **Fix**

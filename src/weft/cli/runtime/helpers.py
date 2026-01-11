@@ -1,6 +1,8 @@
 """Shared helper functions for runtime commands."""
 
+import logging
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Literal
@@ -8,6 +10,31 @@ from typing import Literal
 from weft.config.errors import ConfigError
 from weft.config.project import load_weftrc
 from weft.utils.project import get_project_root
+
+logger = logging.getLogger(__name__)
+
+
+def sanitize_docker_project_name(name: str) -> str:
+    """Convert project name to Docker Compose-compatible format."""
+    # Convert to lowercase
+    sanitized = name.lower()
+
+    # Replace any sequence of invalid characters with a single hyphen
+    # Valid: a-z, 0-9, hyphen, underscore
+    sanitized = re.sub(r"[^a-z0-9_-]+", "-", sanitized)
+
+    # Remove leading/trailing hyphens or underscores
+    sanitized = sanitized.strip("-_")
+
+    # Ensure it starts with alphanumeric (not hyphen/underscore)
+    if sanitized and not sanitized[0].isalnum():
+        sanitized = "project-" + sanitized
+
+    # Fallback if empty after sanitization
+    if not sanitized:
+        sanitized = "weft-project"
+
+    return sanitized
 
 
 def get_docker_compose_path() -> Path:
@@ -95,7 +122,14 @@ def setup_docker_env(for_command: Literal["up", "down", "logs"] = "up") -> dict[
 
             # Set COMPOSE_PROJECT_NAME for docker compose to namespace containers/networks
             # Docker Compose automatically prefixes all resource names with this value
-            env["COMPOSE_PROJECT_NAME"] = config.project.name
+            # Sanitize project name to meet Docker Compose requirements
+            sanitized_name = sanitize_docker_project_name(config.project.name)
+            if sanitized_name != config.project.name:
+                logger.info(
+                    f"Project name '{config.project.name}' sanitized to '{sanitized_name}' for Docker Compose compatibility. "
+                    f"Docker Compose project names must contain only lowercase letters, numbers, hyphens, and underscores."
+                )
+            env["COMPOSE_PROJECT_NAME"] = sanitized_name
 
             # Set weft package directory for docker build context (only needed for up)
             if for_command == "up":

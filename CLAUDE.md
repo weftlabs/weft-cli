@@ -404,6 +404,7 @@ Check:
 - Format: `{type}({scope}): {subject}`
 - Types: feat, fix, docs, chore, refactor, test
 - Scope: agent name, component, or module
+- **Do NOT include AI co-author attribution** (e.g., no `Co-Authored-By: Claude`)
 - Examples:
     - `feat(watcher): add retry logic for failed AI calls`
     - `docs(deployment): update Docker compose example`

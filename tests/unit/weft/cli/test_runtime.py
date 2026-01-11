@@ -6,7 +6,90 @@ from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
 from weft.cli.runtime import down, logs, up
-from weft.cli.runtime.helpers import validate_docker
+from weft.cli.runtime.helpers import sanitize_docker_project_name, validate_docker
+
+
+class TestSanitizeDockerProjectName:
+    """Tests for Docker Compose project name sanitization."""
+
+    def test_valid_name_unchanged(self):
+        """Test that valid names are not modified."""
+        assert sanitize_docker_project_name("myproject") == "myproject"
+        assert sanitize_docker_project_name("my-project") == "my-project"
+        assert sanitize_docker_project_name("my_project") == "my_project"
+        assert sanitize_docker_project_name("project123") == "project123"
+        assert sanitize_docker_project_name("123project") == "123project"
+
+    def test_uppercase_converted_to_lowercase(self):
+        """Test that uppercase letters are converted to lowercase."""
+        assert sanitize_docker_project_name("MyProject") == "myproject"
+        assert sanitize_docker_project_name("MY-PROJECT") == "my-project"
+        assert sanitize_docker_project_name("MY_PROJECT") == "my_project"
+
+    def test_periods_replaced_with_hyphens(self):
+        """Test that periods are replaced with hyphens."""
+        assert sanitize_docker_project_name("my.project") == "my-project"
+        assert sanitize_docker_project_name("example.app") == "example-app"
+        assert sanitize_docker_project_name("app.example.com") == "app-example-com"
+
+    def test_multiple_invalid_chars_replaced(self):
+        """Test that sequences of invalid characters are replaced with single hyphen."""
+        assert sanitize_docker_project_name("my..project") == "my-project"
+        assert sanitize_docker_project_name("my...project") == "my-project"
+        # Note: existing hyphens are valid and preserved, so "my.-.project" keeps all hyphens
+        assert sanitize_docker_project_name("my.-.project") == "my---project"
+        assert sanitize_docker_project_name("my@#$project") == "my-project"
+
+    def test_special_characters_replaced(self):
+        """Test that special characters are replaced with hyphens."""
+        assert sanitize_docker_project_name("my@project") == "my-project"
+        assert sanitize_docker_project_name("my!project") == "my-project"
+        assert sanitize_docker_project_name("my project") == "my-project"  # space
+        assert sanitize_docker_project_name("my&project") == "my-project"
+
+    def test_leading_trailing_hyphens_removed(self):
+        """Test that leading and trailing hyphens are removed."""
+        assert sanitize_docker_project_name("-myproject") == "myproject"
+        assert sanitize_docker_project_name("myproject-") == "myproject"
+        assert sanitize_docker_project_name("-myproject-") == "myproject"
+        assert sanitize_docker_project_name("---myproject---") == "myproject"
+
+    def test_leading_trailing_underscores_removed(self):
+        """Test that leading and trailing underscores are removed."""
+        assert sanitize_docker_project_name("_myproject") == "myproject"
+        assert sanitize_docker_project_name("myproject_") == "myproject"
+        assert sanitize_docker_project_name("_myproject_") == "myproject"
+
+    def test_starts_with_non_alphanumeric_prepends_prefix(self):
+        """Test that names starting with non-alphanumeric get prefix."""
+        # After stripping leading hyphens/underscores, if it still doesn't start with alphanumeric
+        # Actually, our function strips leading hyphens/underscores first, so this case is rare
+        # But we test it anyway for edge cases
+        assert (
+            sanitize_docker_project_name("123project") == "123project"
+        )  # Starts with number (valid)
+        assert sanitize_docker_project_name("_project") == "project"  # Underscore stripped
+
+    def test_empty_string_returns_fallback(self):
+        """Test that empty string returns fallback name."""
+        assert sanitize_docker_project_name("") == "weft-project"
+        assert sanitize_docker_project_name("   ") == "weft-project"
+        assert sanitize_docker_project_name("...") == "weft-project"
+        assert sanitize_docker_project_name("@@@") == "weft-project"
+
+    def test_only_invalid_characters(self):
+        """Test names with only invalid characters."""
+        assert sanitize_docker_project_name("...") == "weft-project"
+        assert sanitize_docker_project_name("@#$%") == "weft-project"
+        assert sanitize_docker_project_name("   ") == "weft-project"
+
+    def test_complex_real_world_names(self):
+        """Test complex real-world project names."""
+        assert sanitize_docker_project_name("MyApp.Backend.API") == "myapp-backend-api"
+        assert sanitize_docker_project_name("company.com-app") == "company-com-app"
+        # Note: underscores are valid characters and preserved
+        assert sanitize_docker_project_name("Project_2024.v1.0") == "project_2024-v1-0"
+        assert sanitize_docker_project_name("my-AWESOME-app!") == "my-awesome-app"
 
 
 class TestValidateDocker:
@@ -88,6 +171,51 @@ class TestUpCommand:
         assert "-d" in call_args
         assert "watcher-meta" in call_args
         assert "watcher-architect" in call_args
+
+    @patch("subprocess.run")
+    @patch("weft.cli.runtime.up.validate_docker")
+    @patch("weft.cli.runtime.up.check_docker_daemon")
+    @patch("weft.cli.runtime.up.load_weftrc")
+    @patch("weft.cli.runtime.helpers.get_project_root")
+    def test_up_sanitizes_project_name_with_periods(
+        self,
+        mock_get_root,
+        mock_load_config,
+        mock_check_daemon,
+        mock_validate,
+        mock_run,
+        tmp_path: Path,
+        monkeypatch,
+    ):
+        """Test that project names with periods are sanitized for Docker Compose."""
+        monkeypatch.chdir(tmp_path)
+        mock_get_root.return_value = tmp_path
+
+        # Create project with name containing period
+        (tmp_path / ".weftrc.yaml").write_text("project:\n  name: example.app\n  type: backend\n")
+        (tmp_path / "docker-compose.yml").write_text("version: '3'\n")
+
+        # Mock config with project name containing period
+        mock_config = Mock()
+        mock_config.project.name = "example.app"  # Contains period (invalid for Docker Compose)
+        mock_config.agents.enabled = ["meta"]
+        mock_config.ai.provider = "anthropic"
+        mock_config.ai.model = "claude-3-5-sonnet-20241022"
+        mock_config.ai.history_path = "./weft-ai-history"
+        mock_load_config.return_value = mock_config
+
+        mock_validate.return_value = True
+        mock_check_daemon.return_value = True
+        mock_run.return_value = Mock(returncode=0)
+
+        runner = CliRunner()
+        result = runner.invoke(up)
+
+        assert result.exit_code == 0
+
+        # Verify docker compose was called with sanitized project name in environment
+        env_vars = mock_run.call_args[1]["env"]
+        assert env_vars["COMPOSE_PROJECT_NAME"] == "example-app"  # Sanitized
 
     @patch("weft.cli.runtime.up.validate_docker")
     def test_up_docker_not_installed(self, mock_validate, tmp_path: Path, monkeypatch):
