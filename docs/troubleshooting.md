@@ -129,7 +129,7 @@ Log out and back in for changes to apply.
 
 ### Containers fail to start
 
-**Problem**  
+**Problem**
 Agent containers exit immediately.
 
 **Fix**
@@ -139,6 +139,38 @@ weft logs meta
 ```
 
 Most commonly caused by missing API keys or Docker misconfiguration.
+
+---
+
+### Invalid project name for Docker Compose
+
+**Problem**
+Docker Compose reports: "invalid project name... must consist only of lowercase alphanumeric characters, hyphens, and underscores"
+
+**Fix**
+
+Project names with periods (like `my.app` or `company.com`) are not supported by Docker Compose.
+
+**Option 1: Use a valid name during init**
+```bash
+weft init --project-name my-app  # Use hyphens instead of periods
+```
+
+**Option 2: Update existing project**
+Edit `.weftrc.yaml` and change the project name:
+```yaml
+project:
+  name: my-app  # Changed from my.app
+  type: fullstack
+```
+
+Then restart the runtime:
+```bash
+weft down
+weft up
+```
+
+**Note:** Weft will automatically sanitize invalid project names for Docker Compose internally. During `weft init`, you'll be prompted to use the sanitized name, or you can continue with your original name (which will be sanitized automatically when needed).
 
 ---
 

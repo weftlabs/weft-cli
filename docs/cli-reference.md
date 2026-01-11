@@ -44,7 +44,7 @@ weft init [OPTIONS]
 
 | Flag                      | Type    | Description               |
 |---------------------------|---------|---------------------------|
-| `--project-name TEXT`      | String  | Project name              |
+| `--project-name TEXT`      | String  | Project name (lowercase letters, numbers, hyphens, and underscores only) |
 | `--project-type CHOICE`    | Choice  | `backend` \| `frontend` \| `fullstack` |
 | `--ai-provider CHOICE`     | Choice  | `claude` \| `ollama` \| `other` |
 | `--ai-history-path PATH`   | Path    | AI history repo path      |
