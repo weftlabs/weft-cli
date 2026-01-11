@@ -29,7 +29,7 @@ class TestSanitizeDockerProjectName:
     def test_periods_replaced_with_hyphens(self):
         """Test that periods are replaced with hyphens."""
         assert sanitize_docker_project_name("my.project") == "my-project"
-        assert sanitize_docker_project_name("tektonio.app") == "tektonio-app"
+        assert sanitize_docker_project_name("example.app") == "example-app"
         assert sanitize_docker_project_name("app.example.com") == "app-example-com"
 
     def test_multiple_invalid_chars_replaced(self):
@@ -192,12 +192,12 @@ class TestUpCommand:
         mock_get_root.return_value = tmp_path
 
         # Create project with name containing period
-        (tmp_path / ".weftrc.yaml").write_text("project:\n  name: tektonio.app\n  type: backend\n")
+        (tmp_path / ".weftrc.yaml").write_text("project:\n  name: example.app\n  type: backend\n")
         (tmp_path / "docker-compose.yml").write_text("version: '3'\n")
 
         # Mock config with project name containing period
         mock_config = Mock()
-        mock_config.project.name = "tektonio.app"  # Contains period (invalid for Docker Compose)
+        mock_config.project.name = "example.app"  # Contains period (invalid for Docker Compose)
         mock_config.agents.enabled = ["meta"]
         mock_config.ai.provider = "anthropic"
         mock_config.ai.model = "claude-3-5-sonnet-20241022"
@@ -215,7 +215,7 @@ class TestUpCommand:
 
         # Verify docker compose was called with sanitized project name in environment
         env_vars = mock_run.call_args[1]["env"]
-        assert env_vars["COMPOSE_PROJECT_NAME"] == "tektonio-app"  # Sanitized
+        assert env_vars["COMPOSE_PROJECT_NAME"] == "example-app"  # Sanitized
 
     @patch("weft.cli.runtime.up.validate_docker")
     def test_up_docker_not_installed(self, mock_validate, tmp_path: Path, monkeypatch):

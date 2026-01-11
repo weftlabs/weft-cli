@@ -15,14 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def sanitize_docker_project_name(name: str) -> str:
-    """Sanitize project name for Docker Compose compatibility.
-
-    Docker Compose requires project names to consist only of lowercase
-    alphanumeric characters, hyphens, and underscores, and must start
-    with a letter or number.
-
-    Replaces invalid characters (like periods) with hyphens.
-    """
+    """Convert project name to Docker Compose-compatible format."""
     # Convert to lowercase
     sanitized = name.lower()
 
