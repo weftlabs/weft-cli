@@ -195,6 +195,27 @@ def project_init(
         )
         prompted_for_any = True
 
+    # Validate project name for Docker Compose compatibility
+    from weft.cli.runtime.helpers import sanitize_docker_project_name
+
+    sanitized_name = sanitize_docker_project_name(project_name)
+    if sanitized_name != project_name:
+        click.echo(
+            f"\nℹ️  Note: Project name '{project_name}' contains characters not supported by Docker Compose."
+        )
+        click.echo(
+            "   Docker Compose project names must contain only lowercase letters, numbers, hyphens, and underscores."
+        )
+        click.echo(f"   Recommended name: '{sanitized_name}'\n")
+
+        if click.confirm("Use recommended name?", default=True):
+            project_name = sanitized_name
+            click.echo(f"✓ Using project name: {project_name}\n")
+        else:
+            click.echo(
+                f"ℹ️  Continuing with '{project_name}'. Docker Compose will use '{sanitized_name}' internally.\n"
+            )
+
     if not project_type:
         project_type = click.prompt(
             "Project type",
