@@ -111,10 +111,23 @@ def cli(ctx, config: str | None, verbose: bool):  # type: ignore[no-untyped-def]
 
         load_dotenv(config)
     else:
-        # Try loading from default .env file
+        # Try loading from default .env file in project root
+
         from dotenv import load_dotenv
 
-        load_dotenv()
+        from weft.utils.project import get_project_root
+
+        try:
+            project_root = get_project_root()
+            env_path = project_root / ".env"
+            if env_path.exists():
+                load_dotenv(dotenv_path=env_path)
+            else:
+                # Fallback to current directory for projects not initialized with weft
+                load_dotenv()
+        except Exception:
+            # If we can't find project root, try current directory
+            load_dotenv()
 
     # Validate environment for most commands (except --version, --help)
     if ctx.invoked_subcommand not in [None]:
