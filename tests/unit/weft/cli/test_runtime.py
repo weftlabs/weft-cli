@@ -3,6 +3,7 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import yaml
 from click.testing import CliRunner
 
 from weft.cli.runtime import down, logs, up
@@ -542,3 +543,60 @@ class TestProjectRootDiscovery:
         # Verify docker compose was called with correct path
         call_args = mock_run.call_args[0][0]
         assert "-f" in call_args
+
+
+class TestDockerComposeTemplate:
+    """Tests for docker-compose.yml template validation."""
+
+    def test_template_includes_agent_id_for_all_services(self):
+        """Test that docker-compose template has AGENT_ID set for all watcher services."""
+        # Read the docker-compose template
+        template_path = (
+            Path(__file__).parent.parent.parent.parent.parent
+            / "src"
+            / "weft"
+            / "templates"
+            / "docker-compose.yml"
+        )
+        assert template_path.exists(), f"Template not found at {template_path}"
+
+        with open(template_path) as f:
+            compose_config = yaml.safe_load(f)
+
+        # Expected agents and their AGENT_ID values
+        expected_agents = {
+            "watcher-meta": "meta",
+            "watcher-architect": "architect",
+            "watcher-openapi": "openapi",
+            "watcher-ui": "ui",
+            "watcher-integration": "integration",
+            "watcher-test": "test",
+        }
+
+        # Verify each service has AGENT_ID environment variable
+        for service_name, expected_agent_id in expected_agents.items():
+            assert (
+                service_name in compose_config["services"]
+            ), f"Service {service_name} not found in template"
+
+            service = compose_config["services"][service_name]
+            assert "environment" in service, f"Service {service_name} missing environment section"
+
+            env_list = service["environment"]
+            assert isinstance(
+                env_list, list
+            ), f"Service {service_name} environment should be a list"
+
+            # Check if AGENT_ID is in the environment list
+            agent_id_found = False
+            for env_var in env_list:
+                if isinstance(env_var, str) and env_var.startswith("AGENT_ID="):
+                    agent_id_value = env_var.split("=", 1)[1]
+                    assert agent_id_value == expected_agent_id, (
+                        f"Service {service_name} has AGENT_ID={agent_id_value}, "
+                        f"expected AGENT_ID={expected_agent_id}"
+                    )
+                    agent_id_found = True
+                    break
+
+            assert agent_id_found, f"Service {service_name} missing AGENT_ID environment variable"

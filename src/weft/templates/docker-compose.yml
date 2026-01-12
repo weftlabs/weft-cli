@@ -24,6 +24,12 @@ services:
   watcher-meta:
     <<: *watcher-common
     container_name: weft-watcher-meta
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=meta
     env_file:
       - .env.weft.common
       - agents/00-meta/.env
@@ -32,6 +38,12 @@ services:
   watcher-architect:
     <<: *watcher-common
     container_name: weft-watcher-architect
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=architect
     env_file:
       - .env.weft.common
       - agents/01-architect/.env
@@ -40,6 +52,12 @@ services:
   watcher-openapi:
     <<: *watcher-common
     container_name: weft-watcher-openapi
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=openapi
     env_file:
       - .env.weft.common
       - agents/02-openapi/.env
@@ -48,6 +66,12 @@ services:
   watcher-ui:
     <<: *watcher-common
     container_name: weft-watcher-ui
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=ui
     env_file:
       - .env.weft.common
       - agents/03-ui/.env
@@ -56,6 +80,12 @@ services:
   watcher-integration:
     <<: *watcher-common
     container_name: weft-watcher-integration
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=integration
     env_file:
       - .env.weft.common
       - agents/04-integration/.env
@@ -64,6 +94,12 @@ services:
   watcher-test:
     <<: *watcher-common
     container_name: weft-watcher-test
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WEFT_CODE_REPO_PATH=${CODE_REPO_PATH:-/tmp}
+      - WEFT_AI_HISTORY_PATH=${AI_HISTORY_PATH:-/tmp}
+      - AGENT_ID=test
     env_file:
       - .env.weft.common
       - agents/05-test/.env
