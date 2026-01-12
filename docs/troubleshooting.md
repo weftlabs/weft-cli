@@ -59,21 +59,28 @@ Ensure you are running commands from the project root.
 
 ### API key not detected
 
-**Problem**  
-Weft reports that no API key is available.
+**Problem**
+Docker Compose warns: `The "ANTHROPIC_API_KEY" variable is not set`
 
 **Fix**
 
+1. **Create .env file in project root:**
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+echo "ANTHROPIC_API_KEY=sk-ant-your-key" > .env
 ```
 
-Restart the runtime after setting the key:
+2. **Or export in shell:**
+```bash
+export ANTHROPIC_API_KEY=sk-ant-your-key
+```
 
+3. **Restart the runtime:**
 ```bash
 weft down
 weft up
 ```
+
+**Note:** After running `weft init`, `.weft/.env.weft.common` should exist. If missing, run `weft init --force` to regenerate.
 
 ---
 
@@ -146,7 +153,7 @@ Most commonly caused by missing API keys or Docker misconfiguration.
 
 ### Agents are not processing work
 
-**Problem**  
+**Problem**
 Agents start but no output is produced.
 
 **Fix**
