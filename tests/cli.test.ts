@@ -1,5 +1,6 @@
 import {
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -7,6 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import {
   EXIT_API,
@@ -17,6 +19,19 @@ import {
   runCli,
 } from "../src/cli";
 import { resolveCredentialsPath } from "../src/credentials";
+
+function sourceFiles(directory: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...sourceFiles(path));
+      continue;
+    }
+    if (/\.(?:ts|mjs)$/.test(entry.name)) files.push(path);
+  }
+  return files;
+}
 
 function capture() {
   const out: string[] = [];
@@ -35,9 +50,33 @@ describe("weft CLI", () => {
       readFileSync(new URL("../package.json", import.meta.url), "utf8"),
     );
     expect(packageJson.bin).toEqual({ weft: "./bin/weft.mjs" });
+    // The monorepo test asserted a workspace link. This repo asserts the same
+    // ownership property against the published SDK: one public range, no
+    // workspace, file, or link protocol, and no monorepo directory field.
     expect(packageJson.dependencies).toEqual({
-      "@weftlabs/sdk": "workspace:*",
+      "@weftlabs/sdk": "^0.29.0",
     });
+    expect(packageJson.repository).toEqual({
+      type: "git",
+      url: "https://github.com/weftlabs/weft-cli",
+    });
+    expect(packageJson.repository).not.toHaveProperty("directory");
+  });
+
+  it("imports only the public @weftlabs/sdk entry", () => {
+    const root = fileURLToPath(new URL("..", import.meta.url));
+    const specifiers = new Set<string>();
+    for (const directory of ["src", "scripts", "bin"]) {
+      for (const file of sourceFiles(join(root, directory))) {
+        const source = readFileSync(file, "utf8");
+        for (const match of source.matchAll(
+          /(?:from|import)\s*(?:\(\s*)?["']([^"']+)["']/g,
+        )) {
+          if (match[1].startsWith("@weftlabs/")) specifiers.add(match[1]);
+        }
+      }
+    }
+    expect([...specifiers]).toEqual(["@weftlabs/sdk"]);
   });
 
   it("never accepts an API key in argv", async () => {

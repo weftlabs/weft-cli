@@ -20,7 +20,7 @@ import {
 } from "./skill-paths.mjs";
 
 const bundledRoot = "../dist/weft-skill/";
-const workspaceSkill = new URL("../../skills/weft/SKILL.md", import.meta.url);
+const workspaceSkill = new URL("../skills/weft/SKILL.md", import.meta.url);
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -59,9 +59,7 @@ async function removeLegacySkill(skillsRootRelative, warn) {
     legacySkill !== undefined &&
     marker !== JSON.stringify({ sha256: sha256(legacySkill) })
   ) {
-    warn(
-      `Kept modified legacy Skill at ${skillPath}; remove it manually.`,
-    );
+    warn(`Kept modified legacy Skill at ${skillPath}; remove it manually.`);
     return;
   }
   if (legacySkill !== undefined) await unlink(skillPath);
@@ -70,9 +68,7 @@ async function removeLegacySkill(skillsRootRelative, warn) {
   await rm(join(legacyDirectory, ".weft-cli-backup"), { force: true });
   await rmdir(legacyDirectory).catch((error) => {
     if (error.code !== "ENOTEMPTY") throw error;
-    warn(
-      `Kept non-empty legacy Skill directory at ${legacyDirectory}.`,
-    );
+    warn(`Kept non-empty legacy Skill directory at ${legacyDirectory}.`);
   });
 }
 
@@ -85,7 +81,13 @@ export async function installSkill({ force = false, silent = false } = {}) {
   const hosts = [];
 
   if (process.env.WEFT_SKIP_SKILL_INSTALL === "1") {
-    return { status: "skipped", reason: "opt-out", installed: 0, hosts, warnings };
+    return {
+      status: "skipped",
+      reason: "opt-out",
+      installed: 0,
+      hosts,
+      warnings,
+    };
   }
 
   if (!force && process.env.WEFT_FORCE_SKILL_INSTALL !== "1") {
@@ -147,9 +149,15 @@ export async function installSkill({ force = false, silent = false } = {}) {
       const marker = await readIfPresent(markerTarget);
       if (marker !== undefined) {
         for (const file of skillFiles) {
-          await rm(join(dirname(join(directory, file)), `.weft-next-${basename(file)}`), {
-            force: true,
-          });
+          await rm(
+            join(
+              dirname(join(directory, file)),
+              `.weft-next-${basename(file)}`,
+            ),
+            {
+              force: true,
+            },
+          );
         }
       }
 
@@ -177,7 +185,8 @@ export async function installSkill({ force = false, silent = false } = {}) {
         // it. Anything else is user-owned or user-modified and stays.
         let recorded;
         try {
-          recorded = marker === undefined ? undefined : JSON.parse(marker).sha256;
+          recorded =
+            marker === undefined ? undefined : JSON.parse(marker).sha256;
         } catch {
           recorded = undefined;
         }
@@ -204,7 +213,10 @@ export async function installSkill({ force = false, silent = false } = {}) {
         for (const file of skillFiles) {
           const target = join(directory, file);
           await mkdir(dirname(target), { recursive: true });
-          const temporary = join(dirname(target), `.weft-next-${basename(file)}`);
+          const temporary = join(
+            dirname(target),
+            `.weft-next-${basename(file)}`,
+          );
           await writeFile(temporary, skill.get(file), {
             encoding: "utf8",
             mode: 0o600,
@@ -257,7 +269,7 @@ export async function installSkill({ force = false, silent = false } = {}) {
 
 // Still runnable as a script (`node scripts/install-skill.mjs`) for tests and
 // for anyone repairing an install by hand. Nothing invokes it automatically —
-// see cli/README.md for why this is no longer a postinstall hook.
+// see README.md for why this is no longer a postinstall hook.
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href

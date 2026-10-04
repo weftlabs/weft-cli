@@ -1,6 +1,6 @@
 {
   "name": "@weftlabs/cli",
-  "version": "0.28.1",
+  "version": "0.29.0",
   "description": "Command-line client for the Weft buyer runtime",
   "type": "module",
   "bin": {
@@ -11,17 +11,17 @@
     "dist",
     "examples",
     "README.md",
+    "docs/contract.md",
     "scripts/install-skill.mjs",
     "scripts/skill-paths.mjs"
   ],
   "scripts": {
     "build": "tsup",
-    "pretest": "pnpm --filter @weftlabs/sdk build",
-    "test": "vitest run",
-    "pretest:unit": "pnpm --filter @weftlabs/sdk build",
-    "test:unit": "vitest run",
+    "test": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs",
+    "test:unit": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs",
+    "test:packed": "node scripts/test-packed-artifact.mjs",
     "lint:check": "eslint",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\"",
     "prepack": "node scripts/prepare-skill.mjs",
     "prepublishOnly": "pnpm run build"
   },
@@ -36,11 +36,13 @@
   "homepage": "https://weftlabs.com/x402/cli",
   "repository": {
     "type": "git",
-    "url": "https://github.com/weftlabs/weft-sdk",
-    "directory": "cli"
+    "url": "https://github.com/weftlabs/weft-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/weftlabs/weft-cli/issues"
   },
   "dependencies": {
-    "@weftlabs/sdk": "workspace:*"
+    "@weftlabs/sdk": "^0.29.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

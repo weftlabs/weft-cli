@@ -11,11 +11,11 @@
   },
   "homepage": "https://weftlabs.com",
   "documentation": "https://weftlabs.com/connect",
-  "support": "https://github.com/weftlabs/weft-sdk/issues",
+  "support": "https://github.com/weftlabs/weft-cli/issues",
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/weftlabs/weft-sdk"
+    "url": "https://github.com/weftlabs/weft-cli"
   },
   "license": "MIT",
   "keywords": ["mcp", "x402", "mpp", "payments", "agent", "api", "weft"],

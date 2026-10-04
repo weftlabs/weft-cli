@@ -12,7 +12,7 @@ await rm(new URL("../dist/weft-cli-skill", import.meta.url), {
   force: true,
 });
 for (const file of skillFiles) {
-  const source = new URL(`../../skills/weft/${file}`, import.meta.url);
+  const source = new URL(`../skills/weft/${file}`, import.meta.url);
   const destination = new URL(`../dist/weft-skill/${file}`, import.meta.url);
   await mkdir(dirname(fileURLToPath(destination)), { recursive: true });
   await copyFile(source, destination);

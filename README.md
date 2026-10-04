@@ -1,8 +1,10 @@
 # Weft CLI
 
 Use Weft from a shell or an autonomous agent. Application code should use the
-separate [`@weftlabs/sdk`](../typescript/README.md) package. The human-oriented
+separate [`@weftlabs/sdk`](https://github.com/weftlabs/weft-sdk/blob/main/typescript/README.md) package. The human-oriented
 CLI guide is at [weftlabs.com/x402/cli](https://weftlabs.com/x402/cli).
+
+The CLI moved from `weft-sdk` on 2026-10-04. The package name is still `@weftlabs/cli`.
 
 The CLI prints one versioned JSON object per command. It accepts credentials
 through `--api-key-stdin`, `WEFT_API_KEY`, or its protected local credential
@@ -216,5 +218,5 @@ new bootstrap flows do not create OAuth credentials.
 
 See [`examples/agent-bootstrap.sh`](examples/agent-bootstrap.sh) for the same
 sequence as a script, and
-[`docs/operation-inventory.md`](../docs/operation-inventory.md) for commands,
+[`docs/contract.md`](docs/contract.md) for commands,
 output envelopes, and stable exit codes.

@@ -1,0 +1,19 @@
+.DS_Store
+node_modules
+dist
+**/coverage
+**/tmp
+
+# Build products named bin. The CLI entry is source.
+**/bin
+!/bin/
+!/bin/weft.mjs
+
+# Secrets - never commit these
+.env
+.env.*
+.npmrc
+*.pem
+*.key
+*.p12
+credentials.json
