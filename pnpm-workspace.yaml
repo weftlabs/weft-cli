@@ -6,9 +6,5 @@ onlyBuiltDependencies:
 
 blockExoticSubdeps: true
 minimumReleaseAge: 1440
-# The CLI is the first consumer of a just-published SDK. The age gate stays
-# on for every other package.
-minimumReleaseAgeExclude:
-  - "@weftlabs/sdk"
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 525960

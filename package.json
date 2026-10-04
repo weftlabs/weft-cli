@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs",
     "test:unit": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs",
     "test:packed": "node scripts/test-packed-artifact.mjs",

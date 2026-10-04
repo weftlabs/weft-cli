@@ -50,12 +50,11 @@ describe("weft CLI", () => {
       readFileSync(new URL("../package.json", import.meta.url), "utf8"),
     );
     expect(packageJson.bin).toEqual({ weft: "./bin/weft.mjs" });
-    // The monorepo test asserted a workspace link. This repo asserts the same
-    // ownership property against the published SDK: one public range, no
-    // workspace, file, or link protocol, and no monorepo directory field.
-    expect(packageJson.dependencies).toEqual({
-      "@weftlabs/sdk": "^0.29.0",
-    });
+    // One public SDK dependency. The version may move; the shape may not.
+    expect(Object.keys(packageJson.dependencies)).toEqual(["@weftlabs/sdk"]);
+    expect(
+      packageJson.dependencies["@weftlabs/sdk"].replace(/^\^/, ""),
+    ).toMatch(/^\d+\.\d+\.\d+$/);
     expect(packageJson.repository).toEqual({
       type: "git",
       url: "https://github.com/weftlabs/weft-cli",

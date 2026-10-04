@@ -16,5 +16,5 @@ pre-commit:
 pre-push:
   commands:
     lint-format-unit:
-      run: mise exec -- pnpm run lint:check && mise exec -- pnpm run format:check && mise exec -- pnpm run test:unit
-      fail_text: "Lint, format, or unit tests failed"
+      run: mise exec -- pnpm run lint:check && mise exec -- pnpm run format:check && mise exec -- pnpm run typecheck && mise exec -- pnpm run test:unit
+      fail_text: "Lint, format, typecheck, or unit tests failed"

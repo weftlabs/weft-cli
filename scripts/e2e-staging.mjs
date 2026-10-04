@@ -41,8 +41,16 @@ for (const args of commands) {
       stdio: ["ignore", "pipe", "pipe"],
     });
   } catch (error) {
+    const stderr = String(error.stderr ?? "");
+    let detail = stderr.slice(0, 500);
+    try {
+      const parsed = JSON.parse(stderr);
+      detail = `error.code=${parsed.error?.code ?? "missing"} error.message=${parsed.error?.message ?? "missing"}`;
+    } catch {
+      // stderr is not a CLI JSON error. The slice above is the debug text.
+    }
     console.error(
-      `weft ${args[0]} failed with exit ${error.status ?? "unknown"}`,
+      `weft ${args.join(" ")} failed with exit ${error.status ?? "unknown"}: ${detail}`,
     );
     process.exit(1);
   }

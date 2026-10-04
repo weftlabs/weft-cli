@@ -16,11 +16,7 @@ defaults:
   run:
     shell: bash --noprofile --norc -euo pipefail {0}
 
-# github.workflow MUST stay in the group key. Every language workflow and the
-# e2e/sync workflows fire on the same ref; a group keyed on the ref alone puts
-# them all in one slot, so with cancel-in-progress the last run created cancels
-# the others before a single step executes. That shows up on the PR as a red
-# "build"/"publish" check that failed in 0s with no logs.
+# github.workflow stays in the group so CI, staging e2e, and release do not cancel each other.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   # Tag runs publish shared registry state and must finish once started.
@@ -34,7 +30,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - name: Require the tag commit on main
+        run: |
+          git fetch --no-tags origin main
+          git rev-parse --verify origin/main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} is not an ancestor of origin/main"
+            exit 1
+          fi
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
       - name: Setup Node
@@ -57,14 +62,25 @@ jobs:
       - name: Test
         run: pnpm run test:unit
       - name: Pack the tested archive
+        id: pack
         run: |
           mkdir -p "$RUNNER_TEMP/npm-archive"
           pnpm pack --pack-destination "$RUNNER_TEMP/npm-archive"
+          mapfile -t archives < <(find "$RUNNER_TEMP/npm-archive" -name '*.tgz' -print)
+          if [ "${#archives[@]}" -ne 1 ]; then
+            echo "::error::Expected one tested archive, found ${#archives[@]}"
+            exit 1
+          fi
+          echo "archive=${archives[0]}" >> "$GITHUB_OUTPUT"
+      - name: Packed artifact acceptance
+        env:
+          ARCHIVE: ${{ steps.pack.outputs.archive }}
+        run: node scripts/test-packed-artifact.mjs "$ARCHIVE"
       - name: Retain the tested npm archive
         uses: actions/upload-artifact@v7
         with:
           name: npm-archive-${{ github.sha }}
-          path: ${{ runner.temp }}/npm-archive/*.tgz
+          path: ${{ steps.pack.outputs.archive }}
           if-no-files-found: error
 
   publish:

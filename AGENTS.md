@@ -17,6 +17,7 @@ mise install
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- pnpm run lint:check
 mise exec -- pnpm run format:check
+mise exec -- pnpm run typecheck
 mise exec -- pnpm run build
 mise exec -- pnpm run test:unit
 mise exec -- node scripts/test-packed-artifact.mjs
@@ -29,7 +30,6 @@ If pre-commit / pre-push hooks exist, they run automatically. Do not skip them w
 - Import only public `@weftlabs/sdk` exports. Do not import a deep path.
 - Never edit the vendored Skill under `skills/weft/`. Change it in `weftlabs/skills`, then re-vendor it. `skills/SKILLS_REF` pins the commit.
 - The version bump lands through a normal pull request. Releases are tag-driven: a `v*` tag runs `.github/workflows/release.yml`. That workflow does not push to `main`.
-- Do not add a dependency the CLI did not already use in `weft-sdk`.
 
 ## PR Rules
 

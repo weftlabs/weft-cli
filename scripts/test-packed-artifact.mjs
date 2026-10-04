@@ -27,15 +27,26 @@ function run(command, args, options = {}) {
   });
 }
 
+const givenTarball = process.argv[2];
+
 try {
-  await access(join(root, "dist", "cli.js"));
-  const packed = run("pnpm", ["pack", "--pack-destination", temp]).trim();
-  const printed = packed.split("\n").at(-1) ?? "";
-  assert.ok(
-    printed.endsWith(".tgz"),
-    `pnpm pack did not name a tarball: ${packed}`,
-  );
-  const tarball = printed.startsWith("/") ? printed : join(temp, printed);
+  let tarball;
+  if (givenTarball) {
+    tarball = givenTarball.startsWith("/")
+      ? givenTarball
+      : join(process.cwd(), givenTarball);
+    await access(tarball);
+  } else {
+    await access(join(root, "dist", "cli.js"));
+    const packed = run("pnpm", ["pack", "--pack-destination", temp]).trim();
+    const printed = packed.split("\n").at(-1) ?? "";
+    assert.ok(
+      printed.endsWith(".tgz"),
+      `pnpm pack did not name a tarball: ${packed}`,
+    );
+    tarball = printed.startsWith("/") ? printed : join(temp, printed);
+  }
+
   const consumer = join(temp, "consumer");
   await mkdir(consumer);
   await writeFile(

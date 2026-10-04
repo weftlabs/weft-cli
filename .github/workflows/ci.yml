@@ -12,11 +12,7 @@ defaults:
   run:
     shell: bash --noprofile --norc -euo pipefail {0}
 
-# github.workflow MUST stay in the group key. Every language workflow and the
-# e2e/sync workflows fire on the same ref; a group keyed on the ref alone puts
-# them all in one slot, so with cancel-in-progress the last run created cancels
-# the others before a single step executes. That shows up on the PR as a red
-# "build"/"publish" check that failed in 0s with no logs.
+# github.workflow stays in the group so CI, staging e2e, and release do not cancel each other.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -44,7 +40,9 @@ jobs:
         run: pnpm run lint:check
       - name: Format check
         run: pnpm run format:check
-      - name: Typecheck and build
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Build
         run: pnpm run build
       - name: Unit tests
         run: pnpm run test:unit
