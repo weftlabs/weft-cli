@@ -28,14 +28,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24.21.0
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
       - name: Skip when the staging secret is absent
         id: secret
         env:
@@ -47,6 +39,16 @@ jobs:
           fi
           echo "::notice::E2E_BUYER_API_KEY is absent. Skipping the staging smoke. A present key that fails the smoke still fails this job."
           echo "present=false" >> "$GITHUB_OUTPUT"
+      - name: Setup pnpm
+        if: steps.secret.outputs.present == 'true'
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        if: steps.secret.outputs.present == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         if: steps.secret.outputs.present == 'true'
         run: pnpm install --frozen-lockfile
