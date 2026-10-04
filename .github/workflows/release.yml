@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Default GITHUB_TOKEN is read-only for the whole workflow. The publish job
+# overrides this with its own job-level `permissions:` (id-token: write for
+# npm Trusted Publishing OIDC, attestations: write for Sigstore provenance).
+# Keeping the workflow default minimal closes the default-scope exfiltration
+# window on jobs that run install scripts.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+# github.workflow MUST stay in the group key. Every language workflow and the
+# e2e/sync workflows fire on the same ref; a group keyed on the ref alone puts
+# them all in one slot, so with cancel-in-progress the last run created cancels
+# the others before a single step executes. That shows up on the PR as a red
+# "build"/"publish" check that failed in 0s with no logs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # Tag runs publish shared registry state and must finish once started.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Verify tag matches package.json
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "v${version}" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${version}"
+            exit 1
+          fi
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm run build
+      - name: Test
+        run: pnpm run test:unit
+      - name: Pack the tested archive
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-archive"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-archive"
+      - name: Retain the tested npm archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-archive-${{ github.sha }}
+          path: ${{ runner.temp }}/npm-archive/*.tgz
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # id-token: write is required for npm provenance (Sigstore via GitHub
+    # OIDC). attestations: write lets the npm CLI record the provenance on
+    # the repository's attestations page in addition to the registry.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - name: Download the tested npm archive
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-archive-${{ github.sha }}
+          path: ${{ runner.temp }}/npm-archive
+      # No dependency installation or build occurs in the OIDC-enabled job.
+      - name: Publish the tested archive with provenance
+        env:
+          ARCHIVE_DIRECTORY: ${{ runner.temp }}/npm-archive
+        run: node scripts/publish-npm-archive.mjs "$ARCHIVE_DIRECTORY"
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub release ${GITHUB_REF_NAME} already exists"
+            exit 0
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
