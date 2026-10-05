@@ -31,12 +31,11 @@ import { EXIT_SUCCESS, runCli } from "../src/cli";
  * carries the full frozen contract.
  */
 
-const SKILL = read("../../skills/weft/SKILL.md");
-const CLI_RULES = read("../../skills/weft/rules/cli.md");
+const SKILL = read("../skills/weft/SKILL.md");
+const CLI_RULES = read("../skills/weft/rules/cli.md");
 const README = read("../README.md");
-const TYPESCRIPT_README = read("../../typescript/README.md");
 const EXAMPLE = read("../examples/agent-bootstrap.sh");
-const INVENTORY = read("../../docs/operation-inventory.md");
+const CONTRACT = read("../docs/contract.md");
 
 const BOOTSTRAP_STATES = [
   "pending",
@@ -139,9 +138,9 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
     for (const [label, document] of [
       ["SKILL.md", SKILL],
       ["rules/cli.md", CLI_RULES],
-      ["cli/README.md", README],
+      ["README.md", README],
       ["agent-bootstrap.sh", EXAMPLE],
-      ["operation-inventory.md", INVENTORY],
+      ["docs/contract.md", CONTRACT],
     ] as const) {
       for (const command of invokedCommands(document)) {
         expect(
@@ -167,7 +166,7 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
       const found = README.indexOf(step, cursor);
       expect(
         found,
-        `cli/README.md is missing or misorders: ${step}`,
+        `README.md is missing or misorders: ${step}`,
       ).toBeGreaterThan(-1);
       cursor = found;
     }
@@ -176,7 +175,7 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
   it("states the exact pre-claim and durable post-claim wbt_ contract", () => {
     for (const [label, document] of [
       ["rules/cli.md", CLI_RULES],
-      ["cli/README.md", README],
+      ["README.md", README],
     ] as const) {
       expect(document, `${label} must name the wbt_ credential`).toContain(
         "wbt_",
@@ -209,7 +208,7 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
   it("documents every bootstrap lifecycle state", () => {
     for (const [label, document] of [
       ["rules/cli.md", CLI_RULES],
-      ["cli/README.md", README],
+      ["README.md", README],
     ] as const) {
       for (const state of BOOTSTRAP_STATES) {
         expect(document, `${label} does not document ${state}`).toContain(
@@ -232,7 +231,7 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
   it("forbids the agent from handling the human's password", () => {
     for (const [label, document] of [
       ["rules/cli.md", CLI_RULES],
-      ["cli/README.md", README],
+      ["README.md", README],
       ["agent-bootstrap.sh", EXAMPLE],
     ] as const) {
       const prohibitions = sentences(document).filter(
@@ -257,9 +256,9 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
   it("teaches the verified signup grant without asking for an onboarding top-up", () => {
     for (const [label, document] of [
       ["rules/cli.md", CLI_RULES],
-      ["cli/README.md", README],
+      ["README.md", README],
       ["agent-bootstrap.sh", EXAMPLE],
-      ["operation-inventory.md", INVENTORY],
+      ["docs/contract.md", CONTRACT],
     ] as const) {
       expect(document, `${label} omits the signup grant`).toMatch(
         /verif(?:y|ies)[\s\S]{0,60}claim email/i,
@@ -269,9 +268,9 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
       );
     }
     for (const [label, document] of [
-      ["cli/README.md", README],
+      ["README.md", README],
       ["agent-bootstrap.sh", EXAMPLE],
-      ["operation-inventory.md", INVENTORY],
+      ["docs/contract.md", CONTRACT],
     ] as const) {
       expect(document, `${label} omits the onboarding top-up guard`).toMatch(
         /do not ask[\s\S]{0,60}wallet top-up/i,
@@ -281,11 +280,14 @@ describe("public documents teach the frozen bootstrap lifecycle", () => {
   });
 
   it("documents claimed-state search and stored OAuth compatibility", () => {
-    for (const document of [README, INVENTORY]) {
+    for (const document of [README, CONTRACT]) {
       expect(document).toContain("`claimed`");
       expect(document).toContain("`search`");
     }
-    for (const document of [CLI_RULES, README, TYPESCRIPT_README, INVENTORY]) {
+    // The weft-sdk test also read typescript/README.md. This repo does not
+    // contain that file. The same stored-OAuth property stays on the
+    // CLI-owned documents.
+    for (const document of [CLI_RULES, README, CONTRACT]) {
       expect(document).toMatch(/stored[\s\S]{0,100}OAuth/i);
     }
   });

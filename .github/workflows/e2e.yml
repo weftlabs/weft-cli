@@ -1,0 +1,63 @@
+name: Staging E2E
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+# github.workflow stays in the group so CI, staging e2e, and release do not cancel each other.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WEFT_STAGING_BASE_URL: https://staging.weft.network
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Skip when the staging secret is absent
+        id: secret
+        env:
+          E2E_BUYER_API_KEY: ${{ secrets.E2E_BUYER_API_KEY }}
+        run: |
+          if [ -n "$E2E_BUYER_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::notice::E2E_BUYER_API_KEY is absent. Skipping the staging smoke. A present key that fails the smoke still fails this job."
+          echo "present=false" >> "$GITHUB_OUTPUT"
+      - name: Setup pnpm
+        if: steps.secret.outputs.present == 'true'
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        if: steps.secret.outputs.present == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install dependencies
+        if: steps.secret.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        if: steps.secret.outputs.present == 'true'
+        run: pnpm run build
+      - name: Run staging smoke
+        if: steps.secret.outputs.present == 'true'
+        env:
+          WEFT_API_KEY: ${{ secrets.E2E_BUYER_API_KEY }}
+          WEFT_BASE_URL: https://staging.weft.network
+        run: node scripts/e2e-staging.mjs

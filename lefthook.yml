@@ -1,0 +1,20 @@
+# Lefthook configuration for weft-cli
+# Install: mise install && mise exec -- lefthook install
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob: "src/**/*.ts"
+      run: mise exec -- pnpm exec eslint {staged_files}
+      fail_text: "Run the TypeScript ESLint fixer"
+    prettier:
+      glob: "{src,tests}/**/*.ts"
+      run: mise exec -- pnpm exec prettier --check {staged_files}
+      fail_text: "Run Prettier on the staged TypeScript files"
+
+pre-push:
+  commands:
+    lint-format-unit:
+      run: mise exec -- pnpm run lint:check && mise exec -- pnpm run format:check && mise exec -- pnpm run typecheck && mise exec -- pnpm run test:unit
+      fail_text: "Lint, format, typecheck, or unit tests failed"

@@ -80,7 +80,7 @@ function isBootstrapCredentials(
       typeof value.approval.user_code === "string") &&
     typeof value.temporary_api_key === "string"
   ) {
-    return value as BootstrapCredentials;
+    return value as unknown as BootstrapCredentials;
   }
 
   return undefined;
@@ -100,7 +100,7 @@ function isLegacyBootstrapCredentials(
     typeof value.expiry === "string" &&
     typeof value.polling_interval === "number"
   ) {
-    return value as LegacyBootstrapCredentials;
+    return value as unknown as LegacyBootstrapCredentials;
   }
 
   return undefined;
@@ -120,7 +120,7 @@ function isOAuthCredentials(
     typeof value.scope === "string" &&
     typeof value.expiry === "string"
   ) {
-    return value as OAuthCredentials;
+    return value as unknown as OAuthCredentials;
   }
 
   return undefined;
