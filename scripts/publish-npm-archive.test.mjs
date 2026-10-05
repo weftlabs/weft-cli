@@ -67,9 +67,12 @@ test("stops after bounded readback when the published package stays absent", asy
   const waits = [];
   api.wait = async (ms) => waits.push(ms);
   api.get = async (path) => (path.includes("/") ? null : {});
-  await assert.rejects(publishArchive(pkg(), "v0.29.0", api));
+  await assert.rejects(
+    publishArchive(pkg(), "v0.29.0", api),
+    /not visible on the registry yet/,
+  );
   assert.deepEqual(api.published, ["cli.tgz"]);
-  assert.equal(waits.length, 5);
+  assert.equal(waits.length, 29);
 });
 
 for (const [label, options] of [
