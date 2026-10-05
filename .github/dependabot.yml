@@ -5,11 +5,17 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # sdk-follow.yml owns @weftlabs/sdk and releases with it.
+    ignore:
+      - dependency-name: "@weftlabs/sdk"
+    # Majors open their own PRs, so one breaking tool does not block the group.
     groups:
       production-dependencies:
         dependency-type: production
+        update-types: ["minor", "patch"]
       development-dependencies:
         dependency-type: development
+        update-types: ["minor", "patch"]
     commit-message:
       prefix: "chore(deps)"
 

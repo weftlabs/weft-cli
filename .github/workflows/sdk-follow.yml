@@ -1,0 +1,99 @@
+name: Follow SDK releases
+
+# Hourly: when npm has a newer @weftlabs/sdk, bump it and the CLI version,
+# prove the build against staging, push the commit and tag to main, and start
+# release.yml on the tag. Pushes made with GITHUB_TOKEN start no workflows, so
+# the release is started with an explicit workflow_dispatch on the tag.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+concurrency:
+  group: sdk-follow
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Check npm for a newer SDK
+        id: plan
+        run: node scripts/sdk-follow.mjs | tee -a "$GITHUB_OUTPUT"
+      - name: Bump the SDK and the CLI version
+        if: steps.plan.outputs.changed == 'true'
+        env:
+          SDK: ${{ steps.plan.outputs.sdk }}
+          CLI: ${{ steps.plan.outputs.cli }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v${CLI}" >/dev/null; then
+            echo "::error::Tag v${CLI} already exists"
+            exit 1
+          fi
+          pnpm add "@weftlabs/sdk@^${SDK}"
+          npm pkg set "version=${CLI}"
+      - name: Build and test
+        if: steps.plan.outputs.changed == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm run typecheck
+          pnpm run test:unit
+          mkdir -p "$RUNNER_TEMP/npm-archive"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-archive"
+          node scripts/test-packed-artifact.mjs "$RUNNER_TEMP"/npm-archive/*.tgz
+      - name: Run staging smoke
+        if: steps.plan.outputs.changed == 'true'
+        env:
+          WEFT_API_KEY: ${{ secrets.E2E_BUYER_API_KEY }}
+          WEFT_BASE_URL: https://staging.weft.network
+        run: |
+          if [ -z "$WEFT_API_KEY" ]; then
+            echo "::error::E2E_BUYER_API_KEY is not set"
+            exit 1
+          fi
+          node scripts/e2e-staging.mjs
+      - name: Push the release commit and tag
+        if: steps.plan.outputs.changed == 'true'
+        env:
+          SDK: ${{ steps.plan.outputs.sdk }}
+          CLI: ${{ steps.plan.outputs.cli }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The token goes in a git header for this step only, never in a URL.
+          git config --local http.https://github.com/.extraheader \
+            "Authorization: Basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "release: v${CLI} (@weftlabs/sdk ${SDK})"
+          git tag -a "v${CLI}" -m "v${CLI}"
+          # Atomic: main and the tag move together, or not at all. A moved
+          # main rejects the push; the next hourly run tries again.
+          git push --atomic origin HEAD:refs/heads/main "refs/tags/v${CLI}"
+          gh workflow run release.yml --ref "v${CLI}"
+          echo "Released v${CLI} for @weftlabs/sdk ${SDK}"
