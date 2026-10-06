@@ -70,14 +70,19 @@ export async function publishArchive(
   let existing = await get(path);
   if (!existing) {
     await publish(pkg.archive);
-    // npm can briefly return 404 after accepting a publish. Retry only the
-    // read; never submit another publish after an uncertain result.
-    for (let attempt = 0; attempt < 6; attempt += 1) {
+    // npm can return 404 for about a minute after accepting a publish
+    // (v0.29.0 took ~60s). Retry only the read, for up to ~5 minutes; never
+    // submit another publish after an uncertain result.
+    for (let attempt = 0; attempt < 30; attempt += 1) {
       existing = await get(path);
       if (existing) break;
-      if (attempt < 5) await wait(2_000);
+      if (attempt < 29) await wait(10_000);
     }
   }
+  assert.ok(
+    existing,
+    `${pkg.manifest.name}@${pkg.manifest.version}: not visible on the registry yet. Rerun this job later; it verifies without publishing again`,
+  );
   assert.equal(
     existing?.dist?.integrity,
     pkg.integrity,
