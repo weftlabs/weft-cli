@@ -1,0 +1,273 @@
+name: Follow SDK releases
+
+# Hourly: when npm has a newer @weftlabs/sdk, prove the bump in a read-only
+# job, then open or update a pull request. Patrick merges that pull request.
+# A v* tag on main then runs release.yml. This workflow does not push to main,
+# does not create a tag, and does not merge.
+#
+# GitHub disables scheduled workflows in a public repository after 60 days
+# with no repository activity. Re-enable "Follow SDK releases" from the
+# Actions tab, or push any commit, if the schedule stops.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+concurrency:
+  group: sdk-follow
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.plan.outputs.changed }}
+      sdk: ${{ steps.plan.outputs.sdk }}
+      cli: ${{ steps.plan.outputs.cli }}
+      breaking: ${{ steps.plan.outputs.breaking }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+      - name: Check npm for a newer SDK
+        id: plan
+        run: node scripts/sdk-follow.mjs | tee -a "$GITHUB_OUTPUT"
+
+  prepare:
+    needs: plan
+    if: needs.plan.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # This job installs and runs third-party code. It must stay read-only.
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Bump the SDK and the CLI version
+        env:
+          SDK: ${{ needs.plan.outputs.sdk }}
+          CLI: ${{ needs.plan.outputs.cli }}
+        run: |
+          pnpm add "@weftlabs/sdk@^${SDK}"
+          npm pkg set "version=${CLI}"
+      - name: Build and test
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm run typecheck
+          pnpm run test:unit
+          mkdir -p "$RUNNER_TEMP/npm-archive"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-archive"
+          node scripts/test-packed-artifact.mjs "$RUNNER_TEMP"/npm-archive/*.tgz
+      - name: Run staging smoke
+        env:
+          WEFT_API_KEY: ${{ secrets.E2E_BUYER_API_KEY }}
+          WEFT_BASE_URL: https://staging.weft.network
+        run: |
+          if [ -z "$WEFT_API_KEY" ]; then
+            echo "::error::E2E_BUYER_API_KEY is not set"
+            exit 1
+          fi
+          node scripts/e2e-staging.mjs
+      - name: Upload the bump files
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-follow-bump
+          path: |
+            package.json
+            pnpm-lock.yaml
+          if-no-files-found: error
+
+  open-pr:
+    needs: [plan, prepare]
+    if: needs.plan.outputs.changed == 'true' && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Installs nothing. Pushes only the bot branch. Does not push main.
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Download the bump files
+        uses: actions/download-artifact@v8
+        with:
+          name: sdk-follow-bump
+          path: ${{ runner.temp }}/bump
+      - name: Open or update the version-bump pull request
+        env:
+          SDK: ${{ needs.plan.outputs.sdk }}
+          CLI: ${{ needs.plan.outputs.cli }}
+          BREAKING: ${{ needs.plan.outputs.breaking }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [[ ! "$SDK" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Refusing unexpected SDK version"
+            exit 1
+          fi
+          if [[ ! "$CLI" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Refusing unexpected CLI version"
+            exit 1
+          fi
+          branch="bot/cli-follow-sdk-${SDK}"
+          dest="refs/heads/${branch}"
+          case "$branch" in
+            bot/cli-follow-sdk-[0-9]*) ;;
+            *) echo "::error::Refusing branch ${branch}"; exit 1 ;;
+          esac
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Checkout is not clean"
+            exit 1
+          fi
+          mapfile -t packages < <(find "$RUNNER_TEMP/bump" -name package.json -print)
+          mapfile -t locks < <(find "$RUNNER_TEMP/bump" -name pnpm-lock.yaml -print)
+          if [ "${#packages[@]}" -ne 1 ] || [ "${#locks[@]}" -ne 1 ]; then
+            echo "::error::Expected one package.json and one pnpm-lock.yaml"
+            exit 1
+          fi
+          cp "${packages[0]}" package.json
+          cp "${locks[0]}" pnpm-lock.yaml
+          CLI="$CLI" SDK="$SDK" python3 -c 'import json, os; manifest = json.load(open("package.json")); assert manifest["version"] == os.environ["CLI"]; assert manifest["dependencies"]["@weftlabs/sdk"] == "^" + os.environ["SDK"]'
+          if git ls-remote --exit-code --tags origin "refs/tags/v${CLI}" >/dev/null; then
+            echo "::error::Tag v${CLI} already exists"
+            exit 1
+          fi
+          git add -- package.json pnpm-lock.yaml
+          mapfile -t names < <(git diff --cached --name-only)
+          actual="$(printf '%s\n' "${names[@]}" | sort)"
+          want="$(printf '%s\n' package.json pnpm-lock.yaml | sort)"
+          if [ "$actual" != "$want" ] || [ -n "$(git diff --name-only)" ]; then
+            echo "::error::Refusing to commit files other than package.json and pnpm-lock.yaml"
+            git status --porcelain
+            exit 1
+          fi
+          if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo "::error::Untracked files remain"
+            exit 1
+          fi
+          message="chore: follow @weftlabs/sdk ${SDK}"
+          title="$message"
+          breaking_note=""
+          if [ "$BREAKING" = "true" ]; then
+            message="breaking SDK line: follow @weftlabs/sdk ${SDK}"
+            title="$message"
+            breaking_note="breaking SDK line: this is a major SDK change, or a minor change while the SDK is 0.x. Nothing auto-merges."
+          fi
+          git -c core.hooksPath=/dev/null \
+            -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "$message"
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::${auth}"
+          if git fetch origin "${dest}:refs/remotes/origin/${branch}"; then
+            expected="$(git rev-parse "refs/remotes/origin/${branch}")"
+            git -c core.hooksPath=/dev/null \
+              -c "http.https://github.com/.extraheader=Authorization: Basic ${auth}" \
+              push --force-with-lease="${dest}:${expected}" origin "HEAD:${dest}"
+          else
+            git -c core.hooksPath=/dev/null \
+              -c "http.https://github.com/.extraheader=Authorization: Basic ${auth}" \
+              push origin "HEAD:${dest}"
+          fi
+          body_file="$RUNNER_TEMP/pr-body.md"
+          {
+            if [ -n "$breaking_note" ]; then printf '%s\n\n' "$breaking_note"; fi
+            printf 'Follows @weftlabs/sdk %s. The CLI version is %s.\n\n' "$SDK" "$CLI"
+            printf 'The prepare job installed the SDK, built, ran unit tests, the packed check, and the staging smoke. This job did not install or run that code. It commits only package.json and pnpm-lock.yaml.\n\n'
+            printf 'Do not auto-merge. After merge, push tag v%s on main. release.yml publishes that tag. This workflow does not push to main and does not create the tag.\n\n' "$CLI"
+            printf 'A push with GITHUB_TOKEN does not start ci.yml on this branch. The prepare job is the proof: %s\n' "$RUN_URL"
+          } > "$body_file"
+          existing="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$title" --body-file "$body_file"
+            number="$existing"
+          else
+            gh pr create --base main --head "$branch" --title "$title" --body-file "$body_file"
+            number="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')"
+          fi
+          if [ "$BREAKING" = "true" ]; then
+            gh pr edit "$number" --add-label "breaking SDK line"
+          else
+            current="$(gh pr view "$number" --json labels --jq '.labels[].name')"
+            if printf '%s\n' "$current" | grep -Fxq "breaking SDK line"; then
+              gh pr edit "$number" --remove-label "breaking SDK line"
+            fi
+          fi
+          echo "Pull request #${number} for ${branch}"
+
+  recover-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      recover: ${{ steps.recover.outputs.recover }}
+      recover_tag: ${{ steps.recover.outputs.recover_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+      - name: Check for a tagged version missing from npm
+        id: recover
+        run: node scripts/sdk-follow.mjs recovery | tee -a "$GITHUB_OUTPUT"
+
+  recover:
+    needs: recover-check
+    if: needs.recover-check.outputs.recover == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Dispatch only. This job installs nothing and runs no repository code.
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch the release again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.recover-check.outputs.recover_tag }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Refusing to dispatch unexpected ref"
+            exit 1
+          fi
+          gh workflow run release.yml --ref "$TAG"
+          echo "Dispatched release.yml on ${TAG}"

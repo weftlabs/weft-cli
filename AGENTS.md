@@ -29,7 +29,7 @@ If pre-commit / pre-push hooks exist, they run automatically. Do not skip them w
 
 - Import only public `@weftlabs/sdk` exports. Do not import a deep path.
 - Never edit the vendored Skill under `skills/weft/`. Change it in `weftlabs/skills`, then re-vendor it. `skills/SKILLS_REF` pins the commit.
-- The version bump lands through a normal pull request. Releases are tag-driven: a `v*` tag runs `.github/workflows/release.yml`. That workflow does not push to `main`.
+- The version bump lands through a normal pull request. `sdk-follow.yml` may open or update `bot/cli-follow-sdk-<version>`. It does not push to `main`, create a tag, or merge. A breaking SDK line (a major change, or a minor change while the SDK is `0.x`) uses the title and label `breaking SDK line`. Releases are tag-driven: a `v*` tag on `main` runs `.github/workflows/release.yml`. That workflow does not push to `main`. If that tag exists and npm does not have the version, `sdk-follow.yml` dispatches the release again.
 
 ## PR Rules
 
