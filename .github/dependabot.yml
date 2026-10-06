@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
-    # sdk-follow.yml owns @weftlabs/sdk and releases with it.
+    # sdk-follow.yml opens the @weftlabs/sdk bump pull request.
     ignore:
       - dependency-name: "@weftlabs/sdk"
     # Majors open their own PRs, so one breaking tool does not block the group.

@@ -220,3 +220,19 @@ See [`examples/agent-bootstrap.sh`](examples/agent-bootstrap.sh) for the same
 sequence as a script, and
 [`docs/contract.md`](docs/contract.md) for commands,
 output envelopes, and stable exit codes.
+
+## SDK follow and release
+
+`.github/workflows/sdk-follow.yml` checks npm every hour. When a newer
+`@weftlabs/sdk` is older than `minimumReleaseAge`, it opens or updates
+`bot/cli-follow-sdk-<version>`. It does not push to `main` and it does not
+merge. A breaking SDK line (a major change, or a minor change while the SDK
+is `0.x`) is titled and labeled `breaking SDK line`.
+
+After that pull request is merged, push a `v*` tag on `main`. That tag runs
+the release. If the tag exists and npm does not have the version, the same
+workflow dispatches the release again.
+
+GitHub disables a scheduled workflow in a public repository after 60 days
+with no activity. Re-enable `Follow SDK releases` in the Actions tab if the
+schedule stops.

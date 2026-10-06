@@ -3,8 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  # sdk-follow.yml pushes tags with GITHUB_TOKEN, which starts no workflow,
-  # so it dispatches this workflow on the tag. Only tag refs may run.
+  # sdk-follow.yml does not push tags. If a tag already exists and npm
+  # does not have that version, it dispatches this workflow on the tag.
+  # Only tag refs may build or publish.
   workflow_dispatch:
 
 # Default GITHUB_TOKEN is read-only for the whole workflow. The publish job
