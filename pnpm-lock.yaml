@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@weftlabs/sdk':
-        specifier: ^0.29.0
-        version: 0.29.0(@x402/core@2.28.0)
+        specifier: ^0.30.0
+        version: 0.30.0(@x402/core@2.28.0)
     devDependencies:
       '@types/node':
         specifier: ^26.6.2
@@ -635,8 +635,8 @@ packages:
   '@vitest/utils@4.1.11':
     resolution: {integrity: sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==}
 
-  '@weftlabs/sdk@0.29.0':
-    resolution: {integrity: sha512-WJd29Ym1NUlrMCpzRltI+gZ0mLIcqkQhi0Vm3TvlspRniNC4St9ImZPJImI59idGGhTj8rnbxcK2nBr1hhk3KQ==}
+  '@weftlabs/sdk@0.30.0':
+    resolution: {integrity: sha512-OePN1z5mrZp13ZANxDTWme1JUXPbsmoLcEB9Ha/+u7+0D7Y6fYHM5TR62hVYbmMPUWLXR71KV4pSJ1zWmcLzeQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@x402/core': ^2.24.0
@@ -2063,7 +2063,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@weftlabs/sdk@0.29.0(@x402/core@2.28.0)':
+  '@weftlabs/sdk@0.30.0(@x402/core@2.28.0)':
     dependencies:
       '@x402/core': 2.28.0
 
