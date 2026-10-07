@@ -13,6 +13,78 @@ history or process listings.
 `weft --help` and `weft <command> --help` return machine-readable JSON without
 requiring authentication.
 
+## Develop from source
+
+This path is for contributors in a cloned checkout, not live buyer use.
+Install [Mise](https://mise.jdx.dev/getting-started.html) and Git first.
+[Activate Mise in your interactive shell](https://mise.jdx.dev/getting-started.html#activate-mise)
+once. Run the blocks below separately from the repository root; after tool
+installation, wait for the next shell prompt before installing dependencies. [`.mise.toml`](.mise.toml) owns the
+Node, pnpm, and lefthook versions; [`package.json`](package.json) and
+[`pnpm-lock.yaml`](pnpm-lock.yaml) own dependencies. The CLI uses the published
+`@weftlabs/sdk`, not a local SDK checkout.
+
+Review the Mise configuration before you trust it, then install tools and
+locked dependencies. Dependency installation needs registry access, but no
+Weft credential or account. Install the normal Git hooks defined in
+[`lefthook.yml`](lefthook.yml); do not bypass them.
+
+```sh
+mise trust
+mise install
+```
+
+Then install dependencies and hooks:
+
+```sh
+pnpm install --frozen-lockfile
+lefthook install
+```
+
+Build the source and check local help without authentication:
+
+```sh
+pnpm run build
+WEFT_SKIP_SKILL_INSTALL=1 node bin/weft.mjs --help
+```
+
+Expect one JSON object with `ok: true` and `command: "help"`. This help path
+returns before credential loading, API requests, account or wallet actions,
+and Skill installation. Keep `WEFT_SKIP_SKILL_INSTALL=1` for local CLI checks
+to opt out of automatic Skill installation on ordinary commands. No `.env`,
+buyer API key, bootstrap, global CLI install, or agent host is needed here.
+Help verifies local command loading, not live API or payment behavior.
+
+The local quality commands are owned by `package.json`:
+
+```sh
+pnpm run lint:check
+pnpm run format:check
+pnpm run typecheck
+pnpm run test:unit
+```
+
+Unit tests use mocked API responses and temporary local state. Some test
+fixtures copy the vendored Skill into `dist/` and install it into temporary
+host directories; they do not install an agent runtime or a Skill in your
+normal home. The format check covers source, tests, and scripts, not Markdown.
+
+The optional package-distribution check is separate from the first-run smoke:
+
+```sh
+WEFT_SKIP_SKILL_INSTALL=1 pnpm run test:packed
+```
+
+Run it after the build. It packs the CLI, runs `prepack` to copy the vendored
+Skill into `dist/`, installs the archive in a temporary consumer project,
+and checks the SDK against the public npm registry. It needs network access;
+it does not prove buyer API access. Do not change the vendored `skills/weft/`
+files here.
+
+These are one-shot commands. No persistent server starts, so no stop command
+is needed. The buyer and bootstrap examples below are optional live workflows,
+not source-development verification.
+
 ## With a buyer API key
 
 ```sh
