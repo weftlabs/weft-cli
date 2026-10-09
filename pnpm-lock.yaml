@@ -25,8 +25,8 @@ importers:
         specifier: ^10.11.0
         version: 10.12.0
       prettier:
-        specifier: 3.9.6
-        version: 3.9.6
+        specifier: 3.9.9
+        version: 3.9.9
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.28)(typescript@6.0.3)
@@ -40,8 +40,8 @@ importers:
   mcpb:
     dependencies:
       mcp-remote:
-        specifier: 0.8.2
-        version: 0.8.2
+        specifier: 0.14.3
+        version: 0.14.3
 
 packages:
 
@@ -1145,8 +1145,8 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
-  mcp-remote@0.8.2:
-    resolution: {integrity: sha512-8wGCVQckLvW+ONz0tc11henp73lbbrt7QOTH7w6qusCpcY+zNSKwBfXF1Mx2xu6z8ncLqLxE1H1CMBCJCx9lcA==}
+  mcp-remote@0.14.3:
+    resolution: {integrity: sha512-M8eMA+LQIYbVNpntDhbCzFYNxwF9O9KozOuDxOrGTtRXbHRq/m4NuFZ6892hmJcU4Zhv4qPfpxrXyG2FPWNMKg==}
     hasBin: true
 
   media-typer@0.3.0:
@@ -1291,8 +1291,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@3.9.6:
-    resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
+  prettier@3.9.9:
+    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -2577,7 +2577,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-remote@0.8.2:
+  mcp-remote@0.14.3:
     dependencies:
       express: 4.22.3
       open: 10.2.0
@@ -2697,7 +2697,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.9.6: {}
+  prettier@3.9.9: {}
 
   proxy-addr@2.0.8:
     dependencies:
