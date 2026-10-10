@@ -6,9 +6,6 @@ name: Skill drift
 
 on:
   pull_request:
-    paths:
-      - "skills/**"
-      - ".github/workflows/skill-drift.yml"
   push:
     branches: ["main"]
     paths:
