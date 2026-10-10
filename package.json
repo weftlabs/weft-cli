@@ -18,8 +18,8 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs scripts/sdk-follow.test.mjs",
-    "test:unit": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs scripts/sdk-follow.test.mjs",
+    "test": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs scripts/sdk-follow.test.mjs scripts/skill-drift.test.mjs",
+    "test:unit": "vitest run tests && node --test scripts/publish-npm-archive.test.mjs scripts/sdk-follow.test.mjs scripts/skill-drift.test.mjs",
     "test:packed": "node scripts/test-packed-artifact.mjs",
     "lint:check": "eslint",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\"",
