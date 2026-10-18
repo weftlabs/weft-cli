@@ -1,5 +1,9 @@
 name: Staging E2E
 
+# An inert docs-only diff (markdown, docs/, agent harness paths) keeps the
+# required `e2e` check present but skips the staging smoke: the build and the
+# smoke exercise the CLI binary, and a docs change does not alter it. The job
+# still runs the secret check, so a missing secret on `main` still fails.
 on:
   pull_request:
   push:
@@ -28,6 +32,26 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Full history so the base commit of a PR or push is present.
+          fetch-depth: 0
+      - name: Detect inert docs-only change
+        id: scope
+        run: |
+          base='${{ github.event.pull_request.base.sha || github.event.before }}'
+          docs_only=true
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            # Unknown base: fail open and run the smoke.
+            docs_only=false
+          else
+            while IFS= read -r path; do
+              case "$path" in
+                *.md|docs/*|.opencode/*) ;;
+                *) docs_only=false; break ;;
+              esac
+            done < <(git diff --name-only "$base" HEAD)
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "inert docs-only diff: $docs_only"
       # Fork and Dependabot PRs never receive Actions secrets, so they skip. The
       # staging key stays out of Dependabot secrets on purpose. The smoke runs on
       # main after merge. Everywhere else a missing key fails: a silent skip on
@@ -50,23 +74,23 @@ jobs:
           echo "::error::E2E_BUYER_API_KEY is not set for this repository. Set it before this check can pass."
           exit 1
       - name: Setup pnpm
-        if: steps.secret.outputs.present == 'true'
+        if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         uses: pnpm/action-setup@v6
       - name: Setup Node
-        if: steps.secret.outputs.present == 'true'
+        if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
-        if: steps.secret.outputs.present == 'true'
+        if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         run: pnpm install --frozen-lockfile
       - name: Build
-        if: steps.secret.outputs.present == 'true'
+        if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         run: pnpm run build
       - name: Run staging smoke
-        if: steps.secret.outputs.present == 'true'
+        if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         env:
           WEFT_API_KEY: ${{ secrets.E2E_BUYER_API_KEY }}
           WEFT_BASE_URL: https://staging.weft.network
