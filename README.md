@@ -308,3 +308,5 @@ workflow dispatches the release again.
 GitHub disables a scheduled workflow in a public repository after 60 days
 with no activity. Re-enable `Follow SDK releases` in the Actions tab if the
 schedule stops.
+
+<!-- CORE-550 proof: README-only change must run docs-contract unit tests -->
