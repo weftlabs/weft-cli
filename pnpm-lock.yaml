@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@weftlabs/sdk':
-        specifier: ^0.31.0
-        version: 0.31.0(@x402/core@2.28.0)
+        specifier: ^0.32.2
+        version: 0.32.2(@x402/core@2.28.0)
     devDependencies:
       '@types/node':
         specifier: ^26.6.2
@@ -617,8 +617,8 @@ packages:
   '@vitest/spy@5.0.3':
     resolution: {integrity: sha512-XhFysQTB8AZ+P4gMi+Lpo99vg2AZi0qKpaB9yXQl37+CaMEAPO3iH/wGVnSyL5MPERiLezpqTVtrR6UZH5GCXg==}
 
-  '@weftlabs/sdk@0.31.0':
-    resolution: {integrity: sha512-eTsZ7uvxQ3kZ4XFkv3+q6PQyCpsr46pQlLTFSZskE10vk/IvDvOisDm4e7CZJMVgHcGsn8DEzEG1XwKV4iotmg==}
+  '@weftlabs/sdk@0.32.2':
+    resolution: {integrity: sha512-WgswOUSt8+VXbD1clyqBjdzPhXbNVQSnpQA+6ssoxl3YViato0gQAM1s6ohx2CQ/1FuNin58IygV9HCNEHRm/w==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@x402/core': ^2.24.0
@@ -2004,7 +2004,7 @@ snapshots:
 
   '@vitest/spy@5.0.3': {}
 
-  '@weftlabs/sdk@0.31.0(@x402/core@2.28.0)':
+  '@weftlabs/sdk@0.32.2(@x402/core@2.28.0)':
     dependencies:
       '@x402/core': 2.28.0
 
