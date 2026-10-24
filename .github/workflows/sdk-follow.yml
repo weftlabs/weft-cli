@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 24.21.0
+          node-version: 24.22.1
       - name: Check npm for a newer SDK
         id: plan
         run: node scripts/sdk-follow.mjs | tee -a "$GITHUB_OUTPUT"
@@ -68,7 +68,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 24.21.0
+          node-version: 24.22.1
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Bump the SDK and the CLI version
@@ -245,7 +245,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 24.21.0
+          node-version: 24.22.1
       - name: Check for a tagged version missing from npm
         id: recover
         run: node scripts/sdk-follow.mjs recovery | tee -a "$GITHUB_OUTPUT"

@@ -80,7 +80,7 @@ jobs:
         if: steps.secret.outputs.present == 'true' && steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@v7
         with:
-          node-version: 24.21.0
+          node-version: 24.22.1
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
