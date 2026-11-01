@@ -19,6 +19,9 @@ then the protected local bootstrap or legacy OAuth credential store. A
 history or process listings. Legacy stored OAuth credentials refresh before expiry.
 The API origin defaults to `https://weft.network` and can be changed with
 `WEFT_BASE_URL` or `--base-url`; stored credentials retain their API origin.
+Every API origin, including a stored one, must use `https`. Plain `http` is
+accepted only for `localhost`, `127.0.0.0/8`, and `::1`. Any other origin exits
+with code 2 (`INSECURE_BASE_URL`) before a credential is sent.
 
 Every command prints one versioned JSON object. Most successes use
 `{"schema_version":"1","ok":true,"command":"…","data":…}` on stdout.
