@@ -1,5 +1,5 @@
 import {
-  readStoredCredentials,
+  readStoredCredentials as readCredentialsFile,
   type BootstrapCredentials,
   type LegacyBootstrapCredentials,
   type OAuthCredentials,
@@ -497,7 +497,44 @@ function baseApiUrl(
   env: Record<string, string | undefined>,
 ): string {
   const raw = baseUrl ?? env.WEFT_BASE_URL ?? WEFT_API_BASE;
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+  return requireSecureBaseUrl(raw.endsWith("/") ? raw.slice(0, -1) : raw);
+}
+
+/**
+ * Credentials travel to the base URL, so it must use https. Plain http is
+ * allowed only for loopback hosts (localhost, 127.0.0.0/8, ::1).
+ */
+function requireSecureBaseUrl(baseUrl: string): string {
+  let url: URL;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    throw new CliError(
+      EXIT_USAGE,
+      "INVALID_BASE_URL",
+      "Base URL is not a valid URL",
+    );
+  }
+  const loopback =
+    url.hostname === "localhost" ||
+    url.hostname === "[::1]" ||
+    /^127\.\d+\.\d+\.\d+$/.test(url.hostname);
+  if (url.protocol === "https:" || (url.protocol === "http:" && loopback)) {
+    return baseUrl;
+  }
+  throw new CliError(
+    EXIT_USAGE,
+    "INSECURE_BASE_URL",
+    "Base URL must use https; http is allowed only for localhost, 127.0.0.0/8, and ::1",
+  );
+}
+
+async function readStoredCredentials(
+  env: Record<string, string | undefined>,
+): Promise<StoredCredentials | undefined> {
+  const stored = await readCredentialsFile(env);
+  if (stored) requireSecureBaseUrl(stored.base_url);
+  return stored;
 }
 
 function resolveApiKeyFromStored(
@@ -758,7 +795,6 @@ export async function runCli(
     const parsed = parseArgs(args);
     command = parsed.command;
     const env = dependencies.env ?? process.env;
-    const baseUrl = baseApiUrl(parsed.baseUrl, env);
 
     if (parsed.command === "skill") {
       if (
@@ -868,6 +904,7 @@ export async function runCli(
       return EXIT_SUCCESS;
     }
 
+    const baseUrl = baseApiUrl(parsed.baseUrl, env);
     await installSkillInBackground();
 
     if (parsed.command === "bootstrap") {

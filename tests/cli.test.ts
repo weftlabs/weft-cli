@@ -1487,3 +1487,106 @@ describe("weft CLI", () => {
     expect(error.error.message).toContain("--global");
   });
 });
+
+describe("base URL transport", () => {
+  const okFetch = () =>
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify({ id: 1 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+
+  it.each([
+    ["flag", ["--base-url", "http://api.example", "me"], {}],
+    ["env", ["me"], { WEFT_BASE_URL: "http://api.example" }],
+    ["look-alike host", ["--base-url", "http://127.evil.example", "me"], {}],
+    [
+      "loopback prefix",
+      ["--base-url", "http://localhost.evil.example", "me"],
+      {},
+    ],
+    ["other scheme", ["--base-url", "ftp://api.example", "me"], {}],
+  ])(
+    "refuses a non-https %s base URL before sending the key",
+    async (_label, args, extraEnv) => {
+      const io = capture();
+      const fetchApi = okFetch();
+      expect(
+        await runCli(args as string[], {
+          ...io,
+          env: { WEFT_API_KEY: "wk_test", HOME: "", ...extraEnv },
+          fetchApi,
+        }),
+      ).toBe(EXIT_USAGE);
+      expect(JSON.parse(io.err[0]).error.code).toBe("INSECURE_BASE_URL");
+      expect(fetchApi).not.toHaveBeenCalled();
+    },
+  );
+
+  it("refuses an invalid base URL", async () => {
+    const io = capture();
+    const fetchApi = okFetch();
+    expect(
+      await runCli(["--base-url", "not a url", "me"], {
+        ...io,
+        env: { WEFT_API_KEY: "wk_test", HOME: "" },
+        fetchApi,
+      }),
+    ).toBe(EXIT_USAGE);
+    expect(JSON.parse(io.err[0]).error.code).toBe("INVALID_BASE_URL");
+    expect(fetchApi).not.toHaveBeenCalled();
+  });
+
+  it.each(["me", "auth"])(
+    "refuses stored credentials with an http base URL (%s)",
+    async (command) => {
+      const dir = mkdtempSync(join(tmpdir(), "weft-cli-http-store-"));
+      const credFile = join(dir, "credentials.json");
+      writeFileSync(
+        credFile,
+        JSON.stringify({
+          base_url: "http://api.example",
+          id: "boot-id",
+          status: "pending",
+          capabilities: ["search"],
+          expires_at: null,
+          approval: { method: "email_link", expires_in: 1200, interval: 7 },
+          temporary_api_key: "stored-temp-key",
+        }),
+      );
+      const io = capture();
+      const fetchApi = okFetch();
+      expect(
+        await runCli(command === "auth" ? ["auth", "status"] : [command], {
+          ...io,
+          env: { WEFT_CREDENTIALS_FILE: credFile, HOME: "" },
+          fetchApi,
+        }),
+      ).toBe(EXIT_USAGE);
+      expect(JSON.parse(io.err[0]).error.code).toBe("INSECURE_BASE_URL");
+      expect(fetchApi).not.toHaveBeenCalled();
+      rmSync(dir, { recursive: true, force: true });
+    },
+  );
+
+  it.each([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://127.1.2.3",
+    "http://[::1]:3000",
+    "https://api.example",
+  ])("allows %s", async (baseUrl) => {
+    const io = capture();
+    const fetchApi = okFetch();
+    expect(
+      await runCli(["--base-url", baseUrl, "me"], {
+        ...io,
+        env: { WEFT_API_KEY: "wk_test", HOME: "" },
+        fetchApi,
+      }),
+    ).toBe(EXIT_SUCCESS);
+    expect(String(fetchApi.mock.calls[0][0])).toBe(`${baseUrl}/api/v1/me`);
+  });
+});
