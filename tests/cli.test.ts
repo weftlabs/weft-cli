@@ -1508,6 +1508,9 @@ describe("base URL transport", () => {
       {},
     ],
     ["other scheme", ["--base-url", "ftp://api.example", "me"], {}],
+    ["userinfo host", ["--base-url", "http://localhost@evil.com", "me"], {}],
+    ["unspecified address", ["--base-url", "http://0.0.0.0", "me"], {}],
+    ["IPv4-mapped IPv6", ["--base-url", "http://[::ffff:127.0.0.1]", "me"], {}],
   ])(
     "refuses a non-https %s base URL before sending the key",
     async (_label, args, extraEnv) => {
@@ -1524,6 +1527,37 @@ describe("base URL transport", () => {
       expect(fetchApi).not.toHaveBeenCalled();
     },
   );
+
+  it("refuses stored OAuth credentials with an http base URL before refresh", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "weft-cli-http-oauth-"));
+    const credFile = join(dir, "credentials.json");
+    writeFileSync(
+      credFile,
+      JSON.stringify({
+        version: 1,
+        type: "oauth",
+        base_url: "http://api.example",
+        client_id: "client-id",
+        access_token: "stored-access-token",
+        refresh_token: "stored-refresh-token",
+        token_type: "Bearer",
+        scope: "search",
+        expiry: "2000-01-01T00:00:00Z",
+      }),
+    );
+    const io = capture();
+    const fetchApi = okFetch();
+    expect(
+      await runCli(["me"], {
+        ...io,
+        env: { WEFT_CREDENTIALS_FILE: credFile, HOME: "" },
+        fetchApi,
+      }),
+    ).toBe(EXIT_USAGE);
+    expect(JSON.parse(io.err[0]).error.code).toBe("INSECURE_BASE_URL");
+    expect(fetchApi).not.toHaveBeenCalled();
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   it("refuses an invalid base URL", async () => {
     const io = capture();
